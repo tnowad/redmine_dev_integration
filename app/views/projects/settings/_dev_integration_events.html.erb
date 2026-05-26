@@ -1,0 +1,69 @@
+<% project = local_assigns[:project] || @project %>
+<% repositories = local_assigns[:repositories] || project.external_repositories.includes(:redmine_repository).order(:provider, :full_name) %>
+<% repository_keys = repositories.map { |repository| [repository.provider.to_s, repository.provider_repository_id.to_s] } %>
+<% parse_payload = lambda do |payload|
+     return payload if payload.is_a?(Hash)
+     return {} if payload.blank?
+
+     JSON.parse(payload)
+   rescue JSON::ParserError, TypeError
+     nil
+   end %>
+<% provider_repository_id_for = lambda do |event|
+     payload = parse_payload.call(event.payload)
+     next if payload.blank?
+
+     case event.provider.to_s
+     when 'github'
+       payload.dig('repository', 'id')
+     when 'gitlab'
+       payload.dig('project', 'id') || payload['project_id'] || payload.dig('repository', 'id') || payload.dig('object_attributes', 'target_project_id')
+     end
+   end %>
+<% provider_events = repository_keys.any? ? ExternalProviderEvent.order(created_at: :desc, id: :desc).limit(200).select { |event| repository_keys.include?([event.provider.to_s, provider_repository_id_for.call(event).to_s]) } : [] %>
+
+<fieldset class="box" id="provider-events">
+  <legend><%= t('redmine_dev_integration.provider_events.title') %></legend>
+
+  <% if provider_events.any? %>
+    <div class="autoscroll">
+      <table class="list">
+        <thead>
+          <tr>
+            <th><%= l(:label_redmine_dev_integration_status) %></th>
+            <th><%= l(:label_redmine_dev_integration_provider) %></th>
+            <th><%= l(:label_redmine_dev_integration_event_type) %></th>
+            <th><%= l(:label_redmine_dev_integration_delivery_id) %></th>
+            <th><%= l(:label_redmine_dev_integration_created_at) %></th>
+            <th><%= l(:label_redmine_dev_integration_processed_at) %></th>
+            <th><%= l(:label_redmine_dev_integration_error_message) %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% provider_events.each do |event| %>
+            <tr>
+              <td><%= h(event.status) %></td>
+              <td><%= h(event.provider) %></td>
+              <td><%= h(event.event_type) %></td>
+              <td><%= h(event.delivery_id) %></td>
+              <td><%= event.created_at.present? ? format_time(event.created_at) : '' %></td>
+              <td><%= event.processed_at.present? ? format_time(event.processed_at) : '' %></td>
+              <td><%= h(event.error_message.to_s) %></td>
+              <td class="buttons">
+                <% if event.status == 'failed' %>
+                  <%= link_to sprite_icon('reload', l(:label_retry)),
+                              retry_provider_event_project_redmine_dev_integration_path(project, event),
+                              method: :post,
+                              class: 'icon icon-reload' %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="nodata"><%= t('redmine_dev_integration.provider_events.empty') %></p>
+  <% end %>
+</fieldset>

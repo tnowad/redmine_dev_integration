@@ -1,0 +1,27 @@
+<%= error_messages_for 'external_repository' %>
+
+<div class="box tabular">
+  <p>
+    <%= f.select :provider, [['GitHub', 'github'], ['GitLab', 'gitlab'], ['Bitbucket', 'bitbucket']], include_blank: true, label: l(:field_provider) %>
+  </p>
+  <p>
+    <%= f.text_field :repository_url_or_path, label: l(:field_repository_path), size: 60 %>
+    <em class="info"><%= l(:text_repository_path_info) %></em>
+  </p>
+  <p>
+    <%= f.text_field :provider_repository_id, label: l(:field_external_repository_id), size: 24 %>
+    <em class="info"><%= l(:text_external_repository_id_info) %></em>
+  </p>
+  <p>
+    <%= f.collection_select :redmine_repository_id, @project.repositories, :id, :name, include_blank: true, label: l(:field_scm_repository) %>
+  </p>
+  <p><%= f.check_box :active, label: l(:field_active) %></p>
+</div>
+
+<fieldset class="box tabular">
+  <legend><%= l(:label_advanced_mapping) %></legend>
+  <p><%= f.text_field :owner, label: l(:field_owner), size: 30 %></p>
+  <p><%= f.text_field :repo_name, label: l(:field_repository_name), size: 30 %></p>
+  <p><%= f.text_field :full_name, label: l(:field_repository_full_name), size: 60 %></p>
+  <p><%= f.text_field :url, label: l(:field_clone_url), size: 60 %></p>
+</fieldset>

@@ -1,0 +1,64 @@
+<% repositories = @external_repositories.presence || @project.external_repositories.includes(:redmine_repository).order(:provider, :full_name) %>
+
+<% if User.current.allowed_to?(:manage_development_integration, @project) %>
+  <p><%= link_to sprite_icon('add', l(:label_repository_new)),
+                  new_project_redmine_dev_integration_path(@project),
+                  class: 'icon icon-add' %></p>
+<% end %>
+
+<% if repositories.any? %>
+  <div class="autoscroll">
+    <table class="list">
+      <thead>
+        <tr>
+          <th><%= l(:label_provider) %></th>
+          <th><%= l(:label_repository) %></th>
+          <th><%= l(:field_external_repository_id) %></th>
+          <th><%= l(:label_status) %></th>
+          <th><%= l(:label_scm_linked) %></th>
+          <th><%= l(:label_active) %></th>
+          <th><%= l(:label_last_synced) %></th>
+          <th><%= l(:label_webhook) %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% repositories.each do |repository| %>
+          <tr>
+            <td><%= h(repository.provider) %></td>
+            <td><%= link_to h(repository.full_name), repository.url, target: '_blank', rel: 'noopener' %></td>
+            <td><%= h(repository.provider_repository_id) %></td>
+            <td><%= repository.active? ? (repository.redmine_repository_id.present? ? l(:label_linked) : l(:label_unlinked)) : l(:label_inactive) %></td>
+            <td><%= repository.redmine_repository&.name.present? ? l(:general_text_Yes) : l(:general_text_No) %></td>
+            <td><%= repository.active? ? l(:general_text_Yes) : l(:general_text_No) %></td>
+            <td><%= repository.last_synced_at.present? ? format_time(repository.last_synced_at) : '' %></td>
+            <td>
+              <% if repository.webhook_registered? %>
+                <%= l(:label_linked) %>
+              <% else %>
+                <%= link_to sprite_icon('reload', l(:button_register_webhook)),
+                            register_webhook_project_redmine_dev_integration_path(@project, repository),
+                            method: :post,
+                            class: 'icon icon-reload' %>
+              <% end %>
+            </td>
+            <td class="buttons">
+              <% if User.current.allowed_to?(:manage_development_integration, @project) %>
+                <%= link_to sprite_icon('edit', l(:button_edit)),
+                            edit_project_redmine_dev_integration_path(@project, repository),
+                            class: 'icon icon-edit' %>
+                <%= link_to sprite_icon('reload', l(:button_sync)),
+                            trigger_provider_sync_project_redmine_dev_integration_path(@project, repository),
+                            method: :post,
+                            class: 'icon icon-reload' %>
+                <%= delete_link project_redmine_dev_integration_path(@project, repository), {}, l(:button_deactivate) %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <p class="nodata"><%= l(:label_no_data) %></p>
+<% end %>

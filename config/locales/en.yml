@@ -1,0 +1,221 @@
+en:
+  label_redmine_dev_integration: Redmine Dev Integration
+  label_redmine_dev_integration_global_settings: Provider integration settings
+  label_redmine_dev_integration_provider_availability: Provider availability
+  label_redmine_dev_integration_webhook_verification: Webhook verification
+  label_redmine_dev_integration_reconciliation_access: API access for reconciliation
+  label_redmine_dev_integration_github_webhook_secret: GitHub webhook signing secret
+  label_redmine_dev_integration_github_provider_enabled: Accept GitHub webhooks
+  label_redmine_dev_integration_github_api_token: GitHub API token
+  label_redmine_dev_integration_gitlab_webhook_token: GitLab webhook secret token
+  label_redmine_dev_integration_gitlab_provider_enabled: Accept GitLab webhooks
+  label_redmine_dev_integration_gitlab_api_token: GitLab API token
+  label_redmine_dev_integration_secret_configured: configured
+  text_redmine_dev_integration_global_settings: "Global settings. Project repository mapping is configured per project."
+  text_redmine_dev_integration_provider_availability: "Disable to reject incoming webhooks for this provider."
+  text_redmine_dev_integration_webhook_verification: "Used to verify webhook requests."
+  text_redmine_dev_integration_reconciliation_access: "Optional. Used only by Reconcile now."
+  label_redmine_dev_integration_github_oauth: GitHub OAuth
+  label_redmine_dev_integration_github_oauth_client_id: OAuth Client ID
+  label_redmine_dev_integration_github_oauth_connect: Connect GitHub
+  label_redmine_dev_integration_gitlab_oauth: GitLab OAuth
+  label_redmine_dev_integration_gitlab_base_url: GitLab base URL
+  label_redmine_dev_integration_gitlab_oauth_app_id: OAuth Application ID
+  label_redmine_dev_integration_gitlab_oauth_app_secret: OAuth Application Secret
+  label_redmine_dev_integration_gitlab_oauth_connect: Connect GitLab
+  label_redmine_dev_integration_oauth_connected: OAuth connected
+  label_redmine_dev_integration_oauth_disconnect: Disconnect
+  text_redmine_dev_integration_gitlab_base_url: Only needed for self-hosted GitLab
+  text_redmine_dev_integration_github_oauth_disconnect_confirm: Disconnect GitHub OAuth?
+  text_redmine_dev_integration_gitlab_oauth_disconnect_confirm: Disconnect GitLab OAuth?
+  button_redmine_dev_integration_trigger_provider_sync: Reconcile now
+  project_module_redmine_dev_integration: Redmine Dev Integration
+  permission_view_development_integration: View development integration
+  permission_manage_development_integration: Manage development integration
+  permission_manage_provider_webhooks: Manage provider webhooks
+  permission_trigger_provider_sync: Trigger provider sync
+  label_development_tab: Development
+  label_pull_request_plural: Pull requests
+  label_no_data_pull_requests: No linked pull requests yet. Push a branch with an issue key in the name or open a PR referencing an issue key.
+  label_keep_secret_placeholder: Leave blank to keep current value
+  label_repository_new: Add repository
+  label_redmine_dev_integration_repository: Repository
+  label_redmine_dev_integration_provider_repository_id: Provider repository ID
+  label_redmine_dev_integration_provider: Provider
+  label_redmine_dev_integration_status: Status
+  label_redmine_dev_integration_scm_linked: SCM linked?
+  label_redmine_dev_integration_active: Active
+  label_redmine_dev_integration_last_synced: Last synced
+  label_redmine_dev_integration_actions: Actions
+  label_redmine_dev_integration_owner_group: Owner/group
+  label_redmine_dev_integration_repository_url_or_path: Repository URL or path
+  label_redmine_dev_integration_advanced_repository_mapping: Advanced mapping
+  label_redmine_dev_integration_status_linked: Linked
+  label_redmine_dev_integration_status_unlinked: Unlinked
+  label_redmine_dev_integration_status_inactive: Inactive
+  label_redmine_dev_integration_event_type: Event type
+  label_redmine_dev_integration_delivery_id: Delivery ID
+  label_redmine_dev_integration_created_at: Created at
+  label_redmine_dev_integration_processed_at: Processed at
+  label_redmine_dev_integration_error_message: Error message
+  label_redmine_dev_integration_repository_provider_id_note: Use the provider repository ID from GitHub/GitLab.
+  button_redmine_dev_integration_validate: Validate
+  button_redmine_dev_integration_deactivate: Deactivate
+  button_redmine_dev_integration_retry: Retry
+  button_redmine_dev_integration_register_webhook: Register Webhook
+  label_no_data_provider_events: No provider events yet.
+  text_missing_issue_keys_plugin: "Warning: redmine_issue_keys plugin is not installed. Branches and pull requests will not be linked to issues."
+  text_no_scm_repositories: "No SCM repositories configured. Set up one in the Repository tab first."
+  label_redmine_dev_integration_deployment_overview: View Deployment Overview
+  label_show_builds: Show builds
+  label_show_deployments: Show deployments
+  label_build_failed_note_enabled: Enable build failed note
+  label_build_success_status: Build success status
+  label_deployment_staging_success_status: Deployment staging success status
+  label_deployment_production_success_status: Deployment production success status
+  label_deployment_failed_note_enabled: Enable deployment failed note
+  label_deployment_failed_status: Deployment failed status
+  label_auto_register_webhooks: Auto-register webhooks on repository connection
+  label_smart_commits_enabled: Enable smart commits
+  label_build_plural: Builds
+  label_deployment_plural: Deployments
+  label_no_data_builds: No linked builds yet.
+  label_no_data_deployments: No linked deployments yet.
+  redmine_dev_integration:
+    repository_audit:
+      events:
+        connected: Repository connected
+        updated: Repository updated
+        deactivated: Repository deactivated
+        scm_linked: SCM repository linked
+        scm_unlinked: SCM repository unlinked
+    repository_validation:
+      success: Repository details are valid
+    provider_events:
+      title: Provider Events
+      empty: No provider events yet.
+      retry_unavailable: Only failed events can be retried.
+      retry_queued: Event retry queued.
+    provider_repository_validator:
+      errors:
+        invalid_provider: provider is invalid
+        provider_disabled: provider is disabled
+        missing_provider_repository_id: provider repository ID is required
+        invalid_provider_repository_id: provider repository ID must not contain /
+        invalid_github_provider_repository_id: GitHub provider repository ID must be numeric
+        invalid_bitbucket_provider_repository_id: Bitbucket provider repository ID must be a valid UUID
+        repository_already_connected: repository already connected
+        missing_owner: owner is required
+        missing_repo_name: repo name is required
+        missing_full_name: full name is required
+        invalid_url: URL must be HTTP or HTTPS
+        invalid_redmine_repository_id: SCM repository must belong to this project
+    reconciliation:
+      reconciled: Reconciled %{repository} and updated last_synced_at.
+      skipped: "Reconciliation skipped for %{repository}: %{reason}"
+      reasons:
+        unsupported_provider: unsupported provider
+        api_polling_unsupported: provider API polling is not implemented yet
+        project_mismatch: repository does not belong to this project
+        inactive_repository: repository is inactive
+        credentials_missing: provider credentials are missing
+        api_failure: provider API request failed
+        unexpected_error: reconciliation failed unexpectedly
+        save_failed: the repository could not be updated
+    webhook_auto_register:
+      failed: "Webhook auto-registration failed: %{message}"
+    oauth:
+      invalid_state: Invalid OAuth state.
+      missing_code: Authorization code missing.
+      connected: "Successfully connected %{provider} OAuth."
+      disconnected: "%{provider} OAuth disconnected."
+      error: "OAuth error: %{message}"
+  label_redmine_dev_integration_general: General
+  label_redmine_dev_integration_smart_commits: Smart Commits
+  label_redmine_dev_integration_branch_pr_automation: Branch / Pull request automation
+  label_redmine_dev_integration_build_deployment: Build / Deployment
+  label_redmine_dev_integration_show_dev_panel: Show development panel
+  label_redmine_dev_integration_enable_automation: Enable automation
+  label_redmine_dev_integration_branch_created_status: Branch created status
+  label_redmine_dev_integration_pr_opened_status: PR opened status
+  label_redmine_dev_integration_pr_merged_status: PR merged status
+  label_redmine_dev_integration_pr_closed_note_enabled: Enable PR closed note
+  label_redmine_dev_integration_webhook: Webhook
+  label_redmine_dev_integration_settings_info: Configure visibility and optional automation for development data linked to issues.
+  label_redmine_dev_integration_provider_user_mappings: Provider User Mappings
+  label_redmine_dev_integration_user_mappings_info: Map provider users to Redmine users. Mappings are global and apply to all projects.
+  label_redmine_dev_integration_provider_login: Provider Login
+  label_redmine_dev_integration_provider_user_id: Provider User ID
+  label_redmine_dev_integration_redmine_user: Redmine User
+  label_redmine_dev_integration_add_mapping: Add Mapping
+  label_redmine_dev_integration_scm_repository: SCM repository
+  label_redmine_dev_integration_environment: Environment
+  label_redmine_dev_integration_repository_column: Repository
+  label_redmine_dev_integration_branch_ref: Branch / Ref
+  label_redmine_dev_integration_sha: SHA
+  label_redmine_dev_integration_linked_issues: Linked Issues
+  label_redmine_dev_integration_completed: Completed
+  label_redmine_dev_integration_provider_url: Provider URL
+  label_redmine_dev_integration_detailed_deployment: Deployment overview
+  label_redmine_dev_integration_gitlab_oauth_client_secret: OAuth App Secret
+  label_redmine_dev_integration_bitbucket_provider_enabled: Accept Bitbucket webhooks
+  label_redmine_dev_integration_bitbucket_webhook_secret: Bitbucket webhook signing secret
+  label_redmine_dev_integration_bitbucket_api_token: Bitbucket API token
+  label_redmine_dev_integration_bitbucket_oauth: Bitbucket OAuth
+  label_redmine_dev_integration_bitbucket_oauth_key: OAuth Key
+  label_redmine_dev_integration_bitbucket_oauth_secret: OAuth Secret
+  label_redmine_dev_integration_bitbucket_oauth_connect: Connect Bitbucket
+  text_redmine_dev_integration_bitbucket_oauth_disconnect_confirm: Disconnect Bitbucket OAuth?
+  label_redmine_dev_integration_load_repos: Load repositories
+  label_redmine_dev_integration_select_repo: Select a repository...
+  label_redmine_dev_integration_open_in_provider: Open in provider
+
+  label_dev_integration_settings: Development Settings
+  label_dev_integration_repos: Repositories
+  label_dev_integration_events: Provider Events
+  label_dev_integration_users: User Mappings
+  label_dev_integration_general: Development Settings
+  label_branch_pr_automation: Branch / Pull Request Automation
+  label_build_automation: Build Automation
+  label_deployment_automation: Deployment Automation
+  label_linked: Linked
+  label_unlinked: Unlinked
+  label_inactive: Inactive
+  label_retry: Retry
+  label_show_dev_panel: Show development panel on issues
+  label_enable_automation: Enable automation
+  label_pr_closed_note_enabled: Enable PR closed without merge note
+  label_advanced_mapping: Advanced Mapping
+  label_status: Status
+  label_webhook: Webhook
+  label_scm_linked: SCM linked?
+  label_last_synced: Last synced
+  field_provider: Provider
+  field_branch_created_status: Branch created status
+  field_pr_opened_status: PR opened status
+  field_pr_merged_status: PR merged status
+  field_build_success_status: Build success status
+  field_deployment_staging_success_status: Staging success status
+  field_deployment_production_success_status: Production success status
+  field_deployment_failed_status: Deployment failed status
+  field_external_repository_id: External Repository ID
+  field_repository_path: Repository Path
+  field_repository_name: Repository Name
+  field_repository_full_name: Repository Full Name
+  field_clone_url: Clone URL
+  field_owner: Owner
+  field_scm_repository: SCM Repository
+  field_active: Active
+  button_register_webhook: Register Webhook
+  button_sync: Reconcile now
+  button_deactivate: Deactivate
+  text_dev_integration_settings_info: Configure visibility and optional automation for development data linked to issues.
+  text_repository_path_info: Enter a GitHub/GitLab/Bitbucket URL, SCP-style path, or owner/repo format.
+  text_external_repository_id_info: "The immutable repository ID from the provider. GitHub: numeric; GitLab: numeric; Bitbucket: UUID."
+  text_automation_branch_created_info: When a branch is created or pushed, linked issues transition to this status.
+  text_automation_pr_opened_info: When a pull request is opened, linked issues transition to this status.
+  text_automation_pr_merged_info: When a pull request is merged, linked issues transition to this status.
+  text_automation_build_success_info: When a CI build succeeds, linked issues transition to this status.
+  text_automation_deploy_staging_info: When deployment to staging succeeds, linked issues transition to this status.
+  text_automation_deploy_production_info: When deployment to production succeeds, linked issues transition to this status.
+  text_automation_deploy_failed_info: When a deployment fails, linked issues transition to this status and/or a note is added.

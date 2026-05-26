@@ -1,0 +1,85 @@
+<%= link_to sprite_icon('summary', l(:label_redmine_dev_integration_deployment_overview)),
+            { controller: 'projects/deployment_overview', action: 'index', project_id: @project },
+            class: 'icon icon-summary' %>
+
+<% setting = @development_integration_project_setting || DevelopmentIntegrationProjectSetting.for_project(@project) %>
+
+<%= error_messages_for 'development_integration_project_setting' %>
+
+<%= labelled_form_for setting, as: :development_integration_project_setting,
+                      url: settings_project_redmine_dev_integration_index_path(@project),
+                      html: {method: :patch} do |f| %>
+  <%= hidden_field_tag 'tab', 'dev_integration_settings' %>
+
+  <fieldset class="box tabular">
+    <legend><%= l(:label_dev_integration_general) %></legend>
+    <p><%= f.check_box :show_dev_panel, label: l(:label_show_dev_panel) %></p>
+    <p><%= f.check_box :automation_enabled, label: l(:label_enable_automation) %></p>
+    <p><%= f.check_box :auto_register_webhooks, label: l(:label_auto_register_webhooks) %></p>
+    <p><%= f.check_box :smart_commits_enabled, label: l(:label_smart_commits_enabled) %></p>
+    <em class="info"><%= l(:text_dev_integration_settings_info) %></em>
+  </fieldset>
+
+  <fieldset class="box tabular">
+    <legend><%= l(:label_branch_pr_automation) %></legend>
+    <p>
+      <%= f.label :branch_created_status_id, l(:field_branch_created_status) %>
+      <%= f.collection_select :branch_created_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+      <em class="info"><%= l(:text_automation_branch_created_info) %></em>
+    </p>
+    <p>
+      <%= f.label :pr_opened_status_id, l(:field_pr_opened_status) %>
+      <%= f.collection_select :pr_opened_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+      <em class="info"><%= l(:text_automation_pr_opened_info) %></em>
+    </p>
+    <p>
+      <%= f.label :pr_merged_status_id, l(:field_pr_merged_status) %>
+      <%= f.collection_select :pr_merged_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+      <em class="info"><%= l(:text_automation_pr_merged_info) %></em>
+    </p>
+    <p><%= f.check_box :pr_closed_note_enabled, label: l(:label_pr_closed_note_enabled) %></p>
+  </fieldset>
+
+  <div class="splitcontent">
+    <div class="splitcontentleft">
+      <fieldset class="box tabular">
+        <legend><%= l(:label_build_automation) %></legend>
+        <p><%= f.check_box :show_builds, label: l(:label_show_builds) %></p>
+        <p><%= f.check_box :build_failed_note_enabled, label: l(:label_build_failed_note_enabled) %></p>
+        <p>
+          <%= f.label :build_success_status_id, l(:field_build_success_status) %>
+          <%= f.collection_select :build_success_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+          <em class="info"><%= l(:text_automation_build_success_info) %></em>
+        </p>
+      </fieldset>
+    </div>
+    <div class="splitcontentright">
+      <fieldset class="box tabular">
+        <legend><%= l(:label_deployment_automation) %></legend>
+        <p><%= f.check_box :show_deployments, label: l(:label_show_deployments) %></p>
+        <p><%= f.check_box :deployment_failed_note_enabled, label: l(:label_deployment_failed_note_enabled) %></p>
+        <p>
+          <%= f.label :deployment_staging_success_status_id, l(:field_deployment_staging_success_status) %>
+          <%= f.collection_select :deployment_staging_success_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+          <em class="info"><%= l(:text_automation_deploy_staging_info) %></em>
+        </p>
+        <p>
+          <%= f.label :deployment_production_success_status_id, l(:field_deployment_production_success_status) %>
+          <%= f.collection_select :deployment_production_success_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+          <em class="info"><%= l(:text_automation_deploy_production_info) %></em>
+        </p>
+        <p>
+          <%= f.label :deployment_failed_status_id, l(:field_deployment_failed_status) %>
+          <%= f.collection_select :deployment_failed_status_id, IssueStatus.sorted, :id, :name, include_blank: true %>
+          <em class="info"><%= l(:text_automation_deploy_failed_info) %></em>
+        </p>
+      </fieldset>
+    </div>
+  </div>
+
+  <p><%= submit_tag l(:button_save) %></p>
+<% end %>
+
+<% if defined?(Issue) && !Issue.respond_to?(:find_by_issue_key) %>
+  <p class="warning"><%= l(:text_missing_issue_keys_plugin) %></p>
+<% end %>

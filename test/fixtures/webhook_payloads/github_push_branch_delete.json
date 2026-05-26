@@ -1,0 +1,1 @@
+{"ref":"refs/heads/feature/DEV-1-old","before":"abc123def456789012345678901234567890abcd","after":"0000000000000000000000000000000000000000","deleted":true,"repository":{"id":12345,"full_name":"owner/repo","html_url":"https://github.com/owner/repo"},"pusher":{"name":"dev1"},"sender":{"login":"dev1"},"commits":[]}

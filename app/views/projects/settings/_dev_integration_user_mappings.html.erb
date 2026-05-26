@@ -1,0 +1,58 @@
+<% mappings = ExternalProviderUserMapping.order(:provider, :provider_login) %>
+
+<fieldset class="box" id="provider-user-mappings">
+  <legend><%= l(:label_redmine_dev_integration_provider_user_mappings) %></legend>
+  <p><em class="info"><%= l(:label_redmine_dev_integration_user_mappings_info) %></em></p>
+
+  <% if mappings.any? %>
+    <div class="autoscroll">
+      <table class="list">
+        <thead>
+          <tr>
+            <th><%= l(:label_redmine_dev_integration_provider) %></th>
+            <th><%= l(:label_redmine_dev_integration_provider_login) %></th>
+            <th><%= l(:label_redmine_dev_integration_redmine_user) %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% mappings.each do |mapping| %>
+            <tr>
+              <td><%= h(mapping.provider) %></td>
+              <td><%= h(mapping.provider_login) %></td>
+              <td><%= link_to_user mapping.user %></td>
+              <td class="buttons">
+                <%= delete_link destroy_user_mapping_project_redmine_dev_integration_index_path(@project, mapping_id: mapping.id) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <p class="nodata"><%= l(:label_no_data) %></p>
+  <% end %>
+</fieldset>
+
+<fieldset class="box tabular" id="add-mapping-form">
+  <legend><%= l(:label_redmine_dev_integration_add_mapping) %></legend>
+  <%= form_with url: create_user_mapping_project_redmine_dev_integration_index_path(@project), method: :post, local: true do |f| %>
+    <p>
+      <%= label_tag :mapping_provider, l(:label_redmine_dev_integration_provider) %>
+      <%= select_tag :mapping_provider, options_for_select([['GitHub', 'github'], ['GitLab', 'gitlab']]), include_blank: true %>
+    </p>
+    <p>
+      <%= label_tag :mapping_provider_user_id, l(:label_redmine_dev_integration_provider_user_id) %>
+      <%= text_field_tag :mapping_provider_user_id, '', size: 24 %>
+    </p>
+    <p>
+      <%= label_tag :mapping_provider_login, l(:label_redmine_dev_integration_provider_login) %>
+      <%= text_field_tag :mapping_provider_login, '', size: 24 %>
+    </p>
+    <p>
+      <%= label_tag :mapping_user_id, l(:label_redmine_dev_integration_redmine_user) %>
+      <%= select_tag :mapping_user_id, options_from_collection_for_select(User.active.sorted, :id, :name) %>
+    </p>
+    <p><%= submit_tag l(:button_add) %></p>
+  <% end %>
+</fieldset>

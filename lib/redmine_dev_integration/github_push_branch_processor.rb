@@ -1,0 +1,172 @@
+# frozen_string_literal: true
+
+require 'json'
+
+module RedmineDevIntegration
+  class GitHubPushBranchProcessor
+    def initialize; end
+
+    def call(external_provider_event)
+      payload = parse_payload(external_provider_event.payload)
+      return false unless payload.is_a?(Hash)
+      return false unless external_provider_event.provider == 'github'
+      return false unless %w[push create].include?(external_provider_event.event_type)
+
+      branch_name = branch_name_from_event(payload, external_provider_event.event_type)
+      return false unless branch_name
+
+      repository = external_repository_for(payload)
+      return false unless repository
+
+      branch = find_or_initialize_branch(repository, branch_name)
+      branch.url = branch_url(payload, branch_name)
+      branch.sha = payload['after'].presence if payload['after'].present?
+      branch.state = deleted?(payload, external_provider_event.event_type) ? 'deleted' : 'active'
+      branch.deleted_at = Time.current if branch.deleted?
+      branch.deleted_at = nil if branch.active?
+      branch.save!
+      commit_messages = PushCommitTextExtractor.extract(payload['commits'])
+      branch.link_issues_from_texts(branch_name, *commit_messages)
+      process_commits(payload['commits'], repository, branch_name)
+      process_linked_issues(branch, branch_name, payload) if branch.active?
+      process_smart_commits(payload, repository.redmine_project)
+      true
+    end
+
+    private
+
+    def parse_payload(payload)
+      return payload if payload.is_a?(Hash)
+      return {} if payload.blank?
+
+      JSON.parse(payload)
+    rescue JSON::ParserError
+      nil
+    end
+
+    def branch_name_from_ref(ref)
+      return unless ref.start_with?('refs/heads/')
+
+      ref.delete_prefix('refs/heads/')
+    end
+
+    def branch_name_from_event(payload, event_type)
+      if event_type == 'create'
+        return payload['ref'].to_s if payload['ref_type'].to_s == 'branch'
+        return
+      end
+
+      ref = payload['ref'].to_s
+      branch_name_from_ref(ref)
+    end
+
+    def external_repository_for(payload)
+      RedmineDevIntegration::ExternalRepositoryResolver.github(payload)
+    end
+
+    def find_or_initialize_branch(repository, branch_name)
+      ExternalBranch.find_or_initialize_by(external_repository: repository, name: branch_name)
+    end
+
+    def branch_url(payload, branch_name)
+      html_url = payload.dig('repository', 'html_url').to_s
+      return if html_url.blank?
+
+      "#{html_url}/tree/#{branch_name}"
+    end
+
+    def deleted?(payload, event_type)
+      return payload['deleted'] if event_type == 'push'
+
+      payload['deleted'] == true
+    end
+
+    def process_linked_issues(branch, branch_name, payload)
+      branch.issues.find_each do |issue|
+        note = branch_note(branch, branch_name, payload)
+        marker = branch_marker(branch, issue)
+
+        automation_result = AutomationService.new.call(
+          issue: issue,
+          event_type: 'branch_created',
+          project: branch.external_repository.redmine_project,
+          note: note,
+          marker: marker
+        )
+
+        next if automation_result.processed?
+
+        AuditNoteService.new.call(
+          issue: issue,
+          note: note,
+          marker: marker,
+          provider_url: branch.url,
+          external_object_id: branch.id,
+          user: User.current
+        )
+      end
+    end
+
+    def process_commits(commits, repository, branch_name)
+      return unless commits.is_a?(Array)
+
+      commits.each do |commit|
+        next unless commit.is_a?(Hash)
+        sha = commit['id'].to_s
+        next if sha.blank?
+
+        external_commit = ExternalCommit.find_or_initialize_by(
+          provider: 'github',
+          external_repository: repository,
+          provider_commit_id: sha
+        )
+        external_commit.sha = sha
+        external_commit.short_sha = sha[0, 7]
+        external_commit.message = commit['message'].to_s
+        external_commit.author_login = commit.dig('author', 'username') || commit.dig('committer', 'username')
+        external_commit.author_name = commit.dig('author', 'name') || commit.dig('committer', 'name')
+        external_commit.url = commit['url'] ||
+                              "#{repository.url}/commit/#{sha}"
+        external_commit.branch_name = branch_name
+        external_commit.committed_at = commit['timestamp'].presence
+        external_commit.last_event_at = Time.current
+        external_commit.save!
+        external_commit.link_issues_from_texts(commit['message'])
+      end
+    end
+
+    def process_smart_commits(payload, project)
+      commits = payload['commits']
+      return unless commits.is_a?(Array)
+
+      login = payload.dig('pusher', 'name') || payload.dig('sender', 'login')
+      user = RedmineDevIntegration::ProviderUserResolver.call(provider: 'github', provider_login: login)
+
+      commits.each do |commit|
+        next unless commit.is_a?(Hash)
+        sha = commit['id'].to_s
+        message = commit['message'].to_s
+        next if sha.blank? || message.blank?
+        next unless message.match?(IssueKeyExtractor::ISSUE_KEY_PATTERN)
+
+        SmartCommitService.call(
+          project: project,
+          commit_sha: sha,
+          commit_message: message,
+          user: user
+        )
+      end
+    end
+
+    def branch_note(branch, branch_name, payload)
+      parts = ["Branch #{branch.active? ? 'created/activated' : 'deleted'}: #{branch_name}"]
+      parts << "sha=#{branch.sha}" if branch.sha.present?
+      parts << "ref=#{payload['ref']}" if payload['ref'].present?
+      parts.join(' | ')
+    end
+
+    def branch_marker(branch, issue)
+      "github:branch:#{branch.id}:#{issue.id}"
+    end
+  end
+end

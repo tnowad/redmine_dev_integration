@@ -1,0 +1,56 @@
+<%
+  deployments_by_env = local_assigns.fetch(:deployments_by_env, @deployments_by_env || {})
+%>
+
+<div class="autoscroll">
+  <table class="list">
+    <thead>
+      <tr>
+        <th><%= l(:label_redmine_dev_integration_environment) %></th>
+        <th><%= l(:label_redmine_dev_integration_status) %></th>
+        <th><%= l(:label_redmine_dev_integration_repository_column) %></th>
+        <th><%= l(:label_redmine_dev_integration_branch_ref) %></th>
+        <th><%= l(:label_redmine_dev_integration_sha) %></th>
+        <th><%= l(:label_redmine_dev_integration_linked_issues) %></th>
+        <th><%= l(:label_redmine_dev_integration_completed) %></th>
+        <th><%= l(:label_redmine_dev_integration_provider_url) %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if deployments_by_env.any? %>
+        <% deployments_by_env.each do |environment_name, deployment| %>
+          <tr>
+            <td><%= h(environment_name) %></td>
+            <td><%= h(deployment.status) %></td>
+            <td>
+              <%= link_to h(deployment.external_repository.full_name),
+                          deployment.external_repository.url,
+                          target: '_blank',
+                          rel: 'noopener' %>
+            </td>
+            <td><%= h(deployment.ref.presence || deployment.branch_name) %></td>
+            <td><code><%= h(deployment.sha.to_s.first(8)) %></code></td>
+            <td>
+              <% deployment.issues.each do |issue| %>
+                <%= link_to_issue(issue) %>
+              <% end %>
+            </td>
+            <td><%= deployment.completed_at ? format_time(deployment.completed_at) : '' %></td>
+            <td>
+              <% if deployment.environment_url.present? %>
+                <%= link_to h(deployment.environment_url),
+                            deployment.environment_url,
+                            target: '_blank',
+                            rel: 'noopener' %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="8" class="nodata"><%= l(:label_no_data) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

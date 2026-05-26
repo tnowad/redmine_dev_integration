@@ -1,0 +1,281 @@
+<%
+  development_panel_data = @development_panel_data
+  development_panel_data ||= RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue) if defined?(RedmineDevIntegration::IssueDevelopmentPanelData)
+  development_panel_setting =
+    if @issue&.project&.respond_to?(:development_integration_project_setting)
+      @issue.project.development_integration_project_setting || DevelopmentIntegrationProjectSetting.for_project(@issue.project)
+    end
+  branches = development_panel_data&.branches || []
+  scm_branches = development_panel_data&.scm_branches || []
+  commits = development_panel_data&.commits || []
+  external_commits = development_panel_data&.external_commits || []
+  builds = development_panel_data&.builds || []
+  deployments = development_panel_data&.deployments || []
+  pull_requests = development_panel_data&.pull_requests || []
+  show_builds = development_panel_setting.nil? || development_panel_setting.show_builds != false
+  show_deployments = development_panel_setting.nil? || development_panel_setting.show_deployments != false
+%>
+
+<%= call_hook(:view_issues_show_details_bottom, issue: @issue) %>
+
+<div class="development-panel">
+  <section class="development-panel-section">
+    <% if commits.any? || external_commits.any? %>
+      <h3><%= l(:label_revision_plural) %></h3>
+      <ul>
+        <% external_commits.each do |commit| %>
+          <li>
+            <div id="external-commit-<%= commit.id %>" class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info">
+                  <%= avatar(nil, size: "24") %>
+                  <%= h(commit.author_login.presence || commit.author_name.presence || '') %>
+                </span>
+                <span class="journal-meta">
+                  <span class="journal-actions">
+                    <% if commit.url.present? %>
+                      <%= link_to sprite_icon('link', l(:label_redmine_dev_integration_open_in_provider)),
+                                  commit.url,
+                                  target: '_blank',
+                                  rel: 'noopener',
+                                  class: 'icon-only icon-link' %>
+                    <% end %>
+                  </span>
+                  <span class="journal-link"><%= h(commit.short_sha.presence || commit.sha.to_s.first(7)) %></span>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <p>
+                  <%= h(commit.branch_name) %> ·
+                  <%= h(commit.external_repository.provider) %>/<%= h(commit.external_repository.full_name) %>
+                  <% if commit.committed_at.present? %>
+                    · <%= format_time(commit.committed_at) %>
+                  <% end %>
+                </p>
+                <div class="wiki">
+                  <%= textilizable(commit.message) %>
+                </div>
+              </div>
+            </div>
+          </li>
+        <% end %>
+        <% commits.each do |changeset| %>
+          <li>
+            <div id="changeset-<%= changeset.id %>" class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info">
+                  <%= avatar(changeset.user, size: "24") %>
+                  <%= authoring changeset.committed_on, changeset.author, label: :label_added_time_by %>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <p>
+                  <%= link_to_revision(changeset, changeset.repository, text: format_revision(changeset)) %>
+                </p>
+                <div class="wiki changeset-comments">
+                  <%= format_changeset_comments changeset %>
+                </div>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% end %>
+  </section>
+
+  <section class="development-panel-section">
+    <% if branches.any? || scm_branches.any? %>
+      <h3><%= l(:label_branch) %></h3>
+      <ul>
+        <% branches.each do |branch| %>
+          <li>
+            <div id="branch-<%= branch.id %>" class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info"><%= h(branch.name) %></span>
+                <span class="journal-meta">
+                  <span class="journal-actions">
+                    <% if branch.url.present? %>
+                      <%= link_to sprite_icon('link', l(:label_redmine_dev_integration_open_in_provider)),
+                                  branch.url,
+                                  target: '_blank',
+                                  rel: 'noopener',
+                                  class: 'icon-only icon-link' %>
+                    <% end %>
+                  </span>
+                  <span class="journal-link"><%= h(branch.state) %></span>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <ul class="journal-details">
+                  <li><%= h(branch.external_repository.provider) %> / <%= h(branch.external_repository.full_name) %></li>
+                  <% if branch.sha.present? %><li><%= h(branch.sha.to_s.first(7)) %></li><% end %>
+                  <li><%= format_time(branch.updated_at) %></li>
+                </ul>
+              </div>
+            </div>
+          </li>
+        <% end %>
+        <% scm_branches.each do |branch| %>
+          <li>
+            <div class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info">
+                  <%= link_to h(branch.name),
+                              controller: 'repositories',
+                              action: 'show',
+                              id: @issue.project,
+                              repository_id: branch.repository.identifier_param,
+                              rev: branch.name %>
+                </span>
+                <span class="journal-meta">
+                  <span class="journal-link"><%= h(branch.state) %></span>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <ul class="journal-details">
+                  <li><%= l(:label_scm) %> / <%= h(branch.repository.identifier.presence || 'root') %></li>
+                </ul>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% end %>
+  </section>
+
+  <% if show_builds %>
+  <section class="development-panel-section">
+    <% if builds.any? %>
+      <h3><%= l(:label_build_plural) %></h3>
+      <ul>
+        <% builds.each do |build| %>
+          <li>
+            <div id="build-<%= build.id %>" class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info">
+                  <strong><%= h(build.name) %></strong>
+                  <span class="badge badge-status-<%= build.status %>"><%= h(build.status) %></span>
+                </span>
+                <span class="journal-meta">
+                  <span class="journal-actions">
+                    <% if build.url.present? %>
+                      <%= link_to sprite_icon('link', l(:label_redmine_dev_integration_open_in_provider)),
+                                  build.url,
+                                  target: '_blank',
+                                  rel: 'noopener',
+                                  class: 'icon-only icon-link' %>
+                    <% end %>
+                  </span>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <ul class="journal-details">
+                  <li><%= h(build.ref.presence || build.branch_name) %></li>
+                  <li><%= h(build.sha.to_s.first(7)) %></li>
+                  <li><%= h(build.external_repository.provider) %> / <%= h(build.external_repository.full_name) %></li>
+                  <% if build.started_at.present? || build.finished_at.present? %>
+                    <li><%= format_time(build.started_at) if build.started_at.present? %><%= build.started_at.present? && build.finished_at.present? ? ' - ' : '' %><%= format_time(build.finished_at) if build.finished_at.present? %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% end %>
+  </section>
+  <% end %>
+
+  <% if show_deployments %>
+  <section class="development-panel-section">
+    <% if deployments.any? %>
+      <h3><%= l(:label_deployment_plural) %></h3>
+      <ul>
+        <% deployments.each do |deployment| %>
+          <li>
+            <div id="deployment-<%= deployment.id %>" class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info">
+                  <strong><%= h(deployment.environment_name) %></strong>
+                  <span class="badge badge-status-<%= deployment.status %>"><%= h(deployment.status) %></span>
+                </span>
+                <span class="journal-meta">
+                  <span class="journal-actions">
+                    <% if deployment.environment_url.present? %>
+                      <%= link_to sprite_icon('link', l(:label_redmine_dev_integration_open_in_provider)),
+                                  deployment.environment_url,
+                                  target: '_blank',
+                                  rel: 'noopener',
+                                  class: 'icon-only icon-link' %>
+                    <% end %>
+                  </span>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <ul class="journal-details">
+                  <li><%= h(deployment.ref.presence || deployment.branch_name) %></li>
+                  <li><%= h(deployment.sha.to_s.first(7)) %></li>
+                  <li><%= h(deployment.external_repository.provider) %> / <%= h(deployment.external_repository.full_name) %></li>
+                  <li><%= format_time(deployment.completed_at) if deployment.completed_at.present? %></li>
+                </ul>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% end %>
+  </section>
+  <% end %>
+
+  <section class="development-panel-section">
+    <% if pull_requests.any? %>
+      <h3><%= l(:label_pull_request_plural) %></h3>
+      <ul>
+        <% pull_requests.each do |pull_request| %>
+          <li>
+            <div id="pr-<%= pull_request.id %>" class="changeset journal">
+              <h4 class="journal-header">
+                <span class="journal-info">
+                  <strong>#<%= pull_request.number %></strong>
+                  <%= h(pull_request.title) %>
+                </span>
+                <span class="journal-meta">
+                  <span class="journal-actions">
+                    <% if pull_request.url.present? %>
+                      <%= link_to sprite_icon('link', l(:label_redmine_dev_integration_open_in_provider)),
+                                  pull_request.url,
+                                  target: '_blank',
+                                  rel: 'noopener',
+                                  class: 'icon-only icon-link' %>
+                    <% end %>
+                  </span>
+                  <span class="journal-link"><%= h(pull_request.state) %><%= pull_request.merged ? ' / merged' : '' %></span>
+                </span>
+              </h4>
+              <div class="journal-content">
+                <ul class="journal-details">
+                  <li><%= h(pull_request.provider) %> / <%= h(pull_request.external_repository.full_name) %></li>
+                  <% if pull_request.author_login.present? %><li><%= h(pull_request.author_login) %></li><% end %>
+                  <% if pull_request.source_branch.present? || pull_request.target_branch.present? %>
+                    <li><%= h([pull_request.source_branch, pull_request.target_branch].compact.join(' -> ')) %></li>
+                  <% end %>
+                  <li><%= format_time(pull_request.last_event_at || pull_request.updated_at) %></li>
+                </ul>
+              </div>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% end %>
+  </section>
+</div>

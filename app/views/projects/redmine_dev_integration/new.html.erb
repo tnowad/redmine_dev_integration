@@ -1,0 +1,8 @@
+<h2><%= l(:label_repository_new) %></h2>
+
+<%= labelled_form_for @external_repository, as: :external_repository,
+    url: project_redmine_dev_integration_index_path(@project) do |f| %>
+  <%= render partial: 'projects/settings/redmine_dev_integration_form', locals: {f: f, external_repository: @external_repository} %>
+  <%= submit_tag l(:button_create) %>
+  <%= link_to l(:button_cancel), settings_project_path(@project, tab: 'dev_integration_repos') %>
+<% end %>

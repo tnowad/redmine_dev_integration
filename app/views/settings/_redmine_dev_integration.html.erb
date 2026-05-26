@@ -1,0 +1,146 @@
+<p>
+  <%= hidden_field_tag 'settings[github_provider_enabled]', '0' %>
+  <%= check_box_tag 'settings[github_provider_enabled]', '1', settings['github_provider_enabled'].to_s == '1' %>
+  <%= label_tag 'settings_github_provider_enabled', l(:label_redmine_dev_integration_github_provider_enabled) %>
+</p>
+
+<p>
+  <%= label_tag 'settings_github_webhook_secret', l(:label_redmine_dev_integration_github_webhook_secret) %>
+  <%= password_field_tag 'settings[github_webhook_secret]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+  <% if settings['github_webhook_secret'].present? %><em class="info"><%= l(:label_redmine_dev_integration_secret_configured) %></em><% end %>
+  <em class="info"><%= l(:text_redmine_dev_integration_webhook_verification) %></em>
+</p>
+
+<p>
+  <%= label_tag 'settings_github_api_token', l(:label_redmine_dev_integration_github_api_token) %>
+  <%= password_field_tag 'settings[github_api_token]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+  <% if settings['github_api_token'].present? %><em class="info"><%= l(:label_redmine_dev_integration_secret_configured) %></em><% end %>
+  <em class="info"><%= l(:text_redmine_dev_integration_reconciliation_access) %></em>
+</p>
+
+<% github_oauth_connected = settings['github_oauth_connected_at'].present? %>
+
+<fieldset class="box tabular">
+  <legend><%= l(:label_redmine_dev_integration_github_oauth) %></legend>
+  <p>
+    <%= label_tag 'settings_github_oauth_client_id', l(:label_redmine_dev_integration_github_oauth_client_id) %>
+    <%= text_field_tag 'settings[github_oauth_client_id]', settings['github_oauth_client_id'], size: 48 %>
+  </p>
+  <p>
+    <%= label_tag 'settings_github_oauth_client_secret', l(:label_redmine_dev_integration_github_oauth_client_secret) %>
+    <%= password_field_tag 'settings[github_oauth_client_secret]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+    <% if github_oauth_connected %><em class="info"><%= l(:label_redmine_dev_integration_oauth_connected) %></em><% end %>
+  </p>
+  <p>
+    <% if github_oauth_connected %>
+      <%= link_to sprite_icon('unlink', l(:label_redmine_dev_integration_oauth_disconnect)),
+                  dev_integrations_github_oauth_disconnect_path,
+                  method: :post,
+                  data: { confirm: l(:text_redmine_dev_integration_github_oauth_disconnect_confirm) },
+                  class: 'icon icon-unlink' %>
+    <% elsif settings['github_oauth_client_id'].present? %>
+      <%= link_to sprite_icon('add', l(:label_redmine_dev_integration_github_oauth_connect)),
+                  dev_integrations_github_oauth_start_path,
+                  class: 'icon icon-add' %>
+    <% end %>
+  </p>
+</fieldset>
+
+<p>
+  <%= hidden_field_tag 'settings[gitlab_provider_enabled]', '0' %>
+  <%= check_box_tag 'settings[gitlab_provider_enabled]', '1', settings['gitlab_provider_enabled'].to_s == '1' %>
+  <%= label_tag 'settings_gitlab_provider_enabled', l(:label_redmine_dev_integration_gitlab_provider_enabled) %>
+</p>
+
+<p>
+  <%= label_tag 'settings_gitlab_webhook_token', l(:label_redmine_dev_integration_gitlab_webhook_token) %>
+  <%= password_field_tag 'settings[gitlab_webhook_token]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+  <% if settings['gitlab_webhook_token'].present? %><em class="info"><%= l(:label_redmine_dev_integration_secret_configured) %></em><% end %>
+</p>
+
+<p>
+  <%= label_tag 'settings_gitlab_api_token', l(:label_redmine_dev_integration_gitlab_api_token) %>
+  <%= password_field_tag 'settings[gitlab_api_token]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+  <% if settings['gitlab_api_token'].present? %><em class="info"><%= l(:label_redmine_dev_integration_secret_configured) %></em><% end %>
+  <em class="info"><%= l(:text_redmine_dev_integration_reconciliation_access) %></em>
+</p>
+
+<% gitlab_oauth_connected = settings['gitlab_oauth_connected_at'].present? %>
+
+<fieldset class="box tabular">
+  <legend><%= l(:label_redmine_dev_integration_gitlab_oauth) %></legend>
+  <p>
+    <%= label_tag 'settings_gitlab_base_url', l(:label_redmine_dev_integration_gitlab_base_url) %>
+    <%= text_field_tag 'settings[gitlab_base_url]', settings['gitlab_base_url'].presence || 'https://gitlab.com', size: 48 %>
+    <em class="info"><%= l(:text_redmine_dev_integration_gitlab_base_url) %></em>
+  </p>
+  <p>
+    <%= label_tag 'settings_gitlab_oauth_app_id', l(:label_redmine_dev_integration_gitlab_oauth_app_id) %>
+    <%= text_field_tag 'settings[gitlab_oauth_app_id]', settings['gitlab_oauth_app_id'], size: 48 %>
+  </p>
+  <p>
+    <%= label_tag 'settings_gitlab_oauth_app_secret', l(:label_redmine_dev_integration_gitlab_oauth_app_secret) %>
+    <%= password_field_tag 'settings[gitlab_oauth_app_secret]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+    <% if gitlab_oauth_connected %><em class="info"><%= l(:label_redmine_dev_integration_oauth_connected) %></em><% end %>
+  </p>
+  <p>
+    <% if gitlab_oauth_connected %>
+      <%= link_to sprite_icon('unlink', l(:label_redmine_dev_integration_oauth_disconnect)),
+                  dev_integrations_gitlab_oauth_disconnect_path,
+                  method: :post,
+                  data: { confirm: l(:text_redmine_dev_integration_gitlab_oauth_disconnect_confirm) },
+                  class: 'icon icon-unlink' %>
+    <% elsif settings['gitlab_oauth_app_id'].present? %>
+      <%= link_to sprite_icon('add', l(:label_redmine_dev_integration_gitlab_oauth_connect)),
+                  dev_integrations_gitlab_oauth_start_path,
+                  class: 'icon icon-add' %>
+    <% end %>
+  </p>
+</fieldset>
+
+<p>
+  <%= hidden_field_tag 'settings[bitbucket_provider_enabled]', '0' %>
+  <%= check_box_tag 'settings[bitbucket_provider_enabled]', '1', settings['bitbucket_provider_enabled'].to_s == '1' %>
+  <%= label_tag 'settings_bitbucket_provider_enabled', l(:label_redmine_dev_integration_bitbucket_provider_enabled) %>
+</p>
+
+<p>
+  <%= label_tag 'settings_bitbucket_webhook_secret', l(:label_redmine_dev_integration_bitbucket_webhook_secret) %>
+  <%= password_field_tag 'settings[bitbucket_webhook_secret]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+  <% if settings['bitbucket_webhook_secret'].present? %><em class="info"><%= l(:label_redmine_dev_integration_secret_configured) %></em><% end %>
+</p>
+
+<p>
+  <%= label_tag 'settings_bitbucket_api_token', l(:label_redmine_dev_integration_bitbucket_api_token) %>
+  <%= password_field_tag 'settings[bitbucket_api_token]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+  <% if settings['bitbucket_api_token'].present? %><em class="info"><%= l(:label_redmine_dev_integration_secret_configured) %></em><% end %>
+  <em class="info"><%= l(:text_redmine_dev_integration_reconciliation_access) %></em>
+</p>
+
+<% bitbucket_oauth_connected = settings['bitbucket_oauth_connected_at'].present? %>
+
+<fieldset class="box tabular">
+  <legend><%= l(:label_redmine_dev_integration_bitbucket_oauth) %></legend>
+  <p>
+    <%= label_tag 'settings_bitbucket_oauth_key', l(:label_redmine_dev_integration_bitbucket_oauth_key) %>
+    <%= text_field_tag 'settings[bitbucket_oauth_key]', settings['bitbucket_oauth_key'], size: 48 %>
+  </p>
+  <p>
+    <%= label_tag 'settings_bitbucket_oauth_secret', l(:label_redmine_dev_integration_bitbucket_oauth_secret) %>
+    <%= password_field_tag 'settings[bitbucket_oauth_secret]', nil, size: 48, autocomplete: 'off', placeholder: l(:label_keep_secret_placeholder) %>
+    <% if bitbucket_oauth_connected %><em class="info"><%= l(:label_redmine_dev_integration_oauth_connected) %></em><% end %>
+  </p>
+  <p>
+    <% if bitbucket_oauth_connected %>
+      <%= link_to sprite_icon('unlink', l(:label_redmine_dev_integration_oauth_disconnect)),
+                  dev_integrations_bitbucket_oauth_disconnect_path,
+                  method: :post,
+                  data: { confirm: l(:text_redmine_dev_integration_bitbucket_oauth_disconnect_confirm) },
+                  class: 'icon icon-unlink' %>
+    <% elsif settings['bitbucket_oauth_key'].present? %>
+      <%= link_to sprite_icon('add', l(:label_redmine_dev_integration_bitbucket_oauth_connect)),
+                  dev_integrations_bitbucket_oauth_start_path,
+                  class: 'icon icon-add' %>
+    <% end %>
+  </p>
+</fieldset>
