@@ -2,7 +2,9 @@ require 'pathname'
 
 Redmine::Plugin.register :redmine_dev_integration do
   name 'Redmine Dev Integration'
-  author 'Redmine Dev Integration'
+  author 'tnowad'
+  author_url 'https://github.com/tnowad/redmine_dev_integration'
+  url 'https://github.com/tnowad/redmine_dev_integration'
   description 'Development integration plugin skeleton'
   version '0.1.0'
   requires_redmine version_or_higher: '6.0.0'
@@ -90,7 +92,6 @@ require_relative 'lib/redmine_dev_integration/oauth_state_store'
 require_relative 'lib/redmine_dev_integration/oauth/token_store'
 require_relative 'lib/redmine_dev_integration/oauth/github_authorization_service'
 require_relative 'lib/redmine_dev_integration/oauth/gitlab_authorization_service'
-require_relative 'lib/redmine_dev_integration/oauth/bitbucket_authorization_service'
 
 apply_redmine_dev_integration_patches = lambda do
   ProjectsHelper.prepend RedmineDevIntegration::ProjectsHelperPatch unless ProjectsHelper < RedmineDevIntegration::ProjectsHelperPatch
