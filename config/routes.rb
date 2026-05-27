@@ -27,6 +27,7 @@ unless route_set.any? {|route| route.path.spec.to_s == '/projects/:project_id/re
           post :trigger_provider_sync, on: :member
           post :retry_provider_event, on: :member
           post :register_webhook, on: :member
+          get :load_repositories, on: :collection
           post :create_user_mapping, on: :collection
           delete :destroy_user_mapping, on: :collection
         end

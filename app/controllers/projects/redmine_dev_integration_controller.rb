@@ -19,6 +19,26 @@ module Projects
     def edit
     end
 
+    def load_repositories
+      provider = params[:provider].to_s.strip
+      return render json: { error: 'Provider required' }, status: :bad_request if provider.blank?
+      return render json: { error: 'Unsupported provider' }, status: :bad_request unless %w[github gitlab bitbucket].include?(provider)
+
+      client = case provider
+               when 'github'
+                 RedmineDevIntegration::ProviderClients::GitHubClient.new
+               when 'gitlab'
+                 RedmineDevIntegration::ProviderClients::GitLabClient.new
+               when 'bitbucket'
+                 RedmineDevIntegration::ProviderClients::BitbucketClient.new
+               end
+
+      return render json: { error: 'Provider credentials not configured' }, status: :service_unavailable if client.credentials_missing?
+
+      repos = client.list_repositories
+      render json: { repositories: repos.map { |r| { id: r[:provider_repository_id], full_name: r[:full_name], url: r[:url] } } }
+    end
+
     def settings
       setting = DevelopmentIntegrationProjectSetting.for_project(@project)
 

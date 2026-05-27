@@ -3,6 +3,67 @@
 <%= labelled_form_for @external_repository, as: :external_repository,
     url: project_redmine_dev_integration_index_path(@project) do |f| %>
   <%= render partial: 'projects/settings/redmine_dev_integration_form', locals: {f: f, external_repository: @external_repository} %>
+
+  <p>
+    <button type="button" id="load-repos-btn" class="icon icon-reload"
+            style="display:none" onclick="loadProviderRepos()">
+      <%= l(:label_redmine_dev_integration_load_repos) %>
+    </button>
+  </p>
+  <p id="repo-selector-placeholder"></p>
+
   <%= submit_tag l(:button_create) %>
   <%= link_to l(:button_cancel), settings_project_path(@project, tab: 'dev_integration_repos') %>
+<% end %>
+
+<%= javascript_tag nonce: true do %>
+  function loadProviderRepos() {
+    var provider = document.querySelector('#external_repository_provider').value;
+    if (!provider) return;
+    var btn = document.getElementById('load-repos-btn');
+    btn.disabled = true;
+    var url = '<%= load_repositories_project_redmine_dev_integration_index_path(@project) %>?provider=' + encodeURIComponent(provider);
+    fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.repositories && data.repositories.length > 0) {
+          var old = document.getElementById('repo-selector');
+          if (old) old.remove();
+          var select = document.createElement('select');
+          select.id = 'repo-selector';
+          var opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = '<%= j l(:label_redmine_dev_integration_select_repo) %>';
+          select.appendChild(opt);
+          data.repositories.forEach(function(repo) {
+            var o = document.createElement('option');
+            o.value = repo.full_name;
+            o.dataset.id = repo.id;
+            o.dataset.url = repo.url || '';
+            o.textContent = repo.full_name;
+            select.appendChild(o);
+          });
+          select.addEventListener('change', function() {
+            var chosen = this.options[this.selectedIndex];
+            if (!chosen.value) return;
+            document.querySelector('#external_repository_repository_url_or_path').value = chosen.value;
+            document.querySelector('#external_repository_provider_repository_id').value = chosen.dataset.id;
+            var urlField = document.querySelector('#external_repository_url');
+            if (urlField) urlField.value = chosen.dataset.url;
+          });
+          document.getElementById('repo-selector-placeholder').appendChild(select);
+        }
+      })
+      .catch(function(e) { console.error('Failed to load repositories:', e); })
+      .finally(function() { btn.disabled = false; });
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var providerSelect = document.querySelector('#external_repository_provider');
+    if (providerSelect) {
+      providerSelect.addEventListener('change', function() {
+        document.getElementById('load-repos-btn').style.display = this.value ? '' : 'none';
+      });
+      providerSelect.dispatchEvent(new Event('change'));
+    }
+  });
 <% end %>
