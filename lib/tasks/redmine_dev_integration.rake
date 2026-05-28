@@ -42,4 +42,16 @@ namespace :redmine_dev_integration do
       puts "#{summary[:reconciled]} reconciled, #{summary[:skipped]} skipped, #{summary[:failed]} failed"
     end
   end
+
+  desc 'Clear payloads for old processed/ignored provider events (default: > 90 days)'
+  task archive_events: :environment do
+    days = (ENV['DAYS'] || 90).to_i
+    cutoff = days.days.ago
+
+    count = ExternalProviderEvent.where('created_at < ?', cutoff)
+      .where(status: %w[processed ignored])
+      .update_all(payload: nil)
+
+    puts "Cleared payloads for #{count} events older than #{days} days"
+  end
 end

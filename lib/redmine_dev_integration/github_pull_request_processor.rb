@@ -145,11 +145,12 @@ module RedmineDevIntegration
     end
 
     def pull_request_note(pull_request, payload, event_type)
-      parts = ["PR #{event_type.to_s.sub('pr_', '').tr('_', ' ')}: ##{pull_request.number}"]
-      parts << pull_request.url if pull_request.url.present?
-      parts << "source=#{pull_request.source_branch}" if pull_request.source_branch.present?
-      parts << "target=#{pull_request.target_branch}" if pull_request.target_branch.present?
-      parts.join(' | ')
+      I18n.t('redmine_dev_integration.pull_request.note_format',
+             event_type: event_type.to_s.sub('pr_', '').tr('_', ' '),
+             number: pull_request.number,
+             url: pull_request.url.presence || '',
+             source: pull_request.source_branch.presence || '',
+             target: pull_request.target_branch.presence || '')
     end
 
     def audit_marker(pull_request, event_type, issue)

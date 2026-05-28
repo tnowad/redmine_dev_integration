@@ -528,6 +528,9 @@ DRY_RUN=1 bundle exec rake redmine_dev_integration:reconcile_all RAILS_ENV=produ
 
 # Hourly: specific project
 0 * * * * cd /path/to/redmine && PROJECT=myproject bundle exec rake redmine_dev_integration:reconcile_project RAILS_ENV=production >> log/reconciliation.log 2>&1
+
+# Daily: clear old event payloads (>90d)
+0 3 * * * cd /path/to/redmine && bundle exec rake redmine_dev_integration:archive_events RAILS_ENV=production >> log/archive_events.log 2>&1
 ```
 
 ### Auto-Reconciliation (Request-Triggered)

@@ -1,0 +1,40 @@
+<h2><%= l(:label_release_plural) %></h2>
+
+<% if @releases.any? %>
+<div class="autoscroll">
+<table class="list">
+  <thead>
+    <tr>
+      <th><%= l(:field_release_name) %></th>
+      <th><%= l(:field_release_tag) %></th>
+      <th><%= l(:label_redmine_dev_integration_provider) %></th>
+      <th><%= l(:label_redmine_dev_integration_repository) %></th>
+      <th><%= l(:label_redmine_dev_integration_linked_issues) %></th>
+      <th><%= l(:label_deployment_plural) %></th>
+      <th><%= l(:label_redmine_dev_integration_created_at) %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @releases.each do |release| %>
+      <tr>
+        <td>
+          <% if release.url.present? %>
+            <%= link_to sprite_icon('link', h(release.name)), release.url, target: '_blank', rel: 'noopener' %>
+          <% else %>
+            <%= h(release.name) %>
+          <% end %>
+        </td>
+        <td><%= h(release.tag_name) %></td>
+        <td><%= h(release.provider) %></td>
+        <td><%= h(release.external_repository.full_name) %></td>
+        <td><%= release.issues.size %></td>
+        <td><%= release.external_deployments.size %></td>
+        <td><%= format_time(release.released_at) if release.released_at.present? %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+</div>
+<% else %>
+  <p class="nodata"><%= l(:label_no_data_releases) %></p>
+<% end %>

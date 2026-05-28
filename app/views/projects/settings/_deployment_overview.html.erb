@@ -14,6 +14,7 @@
         <th><%= l(:label_redmine_dev_integration_linked_issues) %></th>
         <th><%= l(:label_redmine_dev_integration_completed) %></th>
         <th><%= l(:label_redmine_dev_integration_provider_url) %></th>
+        <th><%= l(:label_redmine_dev_integration_actions) %></th>
       </tr>
     </thead>
     <tbody>
@@ -44,11 +45,20 @@
                             rel: 'noopener' %>
               <% end %>
             </td>
+            <td>
+              <% if deployment.status == 'success' %>
+                <%= link_to l(:label_mark_deployment_failed),
+                            project_dev_mark_deployment_failed_path(@project, deployment),
+                            method: :post,
+                            data: { confirm: l(:label_mark_deployment_failed_confirm) },
+                            class: 'icon icon-lock' %>
+              <% end %>
+            </td>
           </tr>
         <% end %>
       <% else %>
         <tr>
-          <td colspan="8" class="nodata"><%= l(:label_no_data) %></td>
+          <td colspan="9" class="nodata"><%= l(:label_no_data) %></td>
         </tr>
       <% end %>
     </tbody>

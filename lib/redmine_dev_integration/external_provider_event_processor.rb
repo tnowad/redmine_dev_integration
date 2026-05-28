@@ -2,6 +2,7 @@
 
 require_relative 'github_push_branch_processor'
 require_relative 'github_pull_request_processor'
+require_relative 'github_pull_request_review_processor'
 require_relative 'github_workflow_run_processor'
 require_relative 'github_deployment_status_processor'
 require_relative 'gitlab_push_branch_processor'
@@ -12,6 +13,8 @@ require_relative 'bitbucket_push_branch_processor'
 require_relative 'bitbucket_pull_request_processor'
 require_relative 'bitbucket_pipeline_processor'
 require_relative 'bitbucket_deployment_processor'
+require_relative 'github_release_processor'
+require_relative 'gitlab_release_processor'
 require_relative 'provider_event_logger'
 
 module RedmineDevIntegration
@@ -50,6 +53,10 @@ module RedmineDevIntegration
 
     def github_pull_request_processor
       @github_pull_request_processor ||= GitHubPullRequestProcessor.new
+    end
+
+    def github_pull_request_review_processor
+      @github_pull_request_review_processor ||= GitHubPullRequestReviewProcessor.new
     end
 
     def github_workflow_run_processor
@@ -92,6 +99,14 @@ module RedmineDevIntegration
       @bitbucket_deployment_processor ||= BitbucketDeploymentProcessor.new
     end
 
+    def github_release_processor
+      @github_release_processor ||= GitHubReleaseProcessor.new
+    end
+
+    def gitlab_release_processor
+      @gitlab_release_processor ||= GitlabReleaseProcessor.new
+    end
+
     def already_finalized?(external_provider_event)
       %w[processed ignored].include?(external_provider_event.status)
     end
@@ -101,13 +116,16 @@ module RedmineDevIntegration
                 when 'github'
                   github_push_branch_processor.call(external_provider_event) ||
                     github_pull_request_processor.call(external_provider_event) ||
+                    github_pull_request_review_processor.call(external_provider_event) ||
                     github_workflow_run_processor.call(external_provider_event) ||
-                    github_deployment_status_processor.call(external_provider_event)
+                    github_deployment_status_processor.call(external_provider_event) ||
+                    github_release_processor.call(external_provider_event)
                 when 'gitlab'
                   gitlab_push_branch_processor.call(external_provider_event) ||
                     gitlab_merge_request_processor.call(external_provider_event) ||
                     gitlab_pipeline_processor.call(external_provider_event) ||
-                    gitlab_deployment_processor.call(external_provider_event)
+                    gitlab_deployment_processor.call(external_provider_event) ||
+                    gitlab_release_processor.call(external_provider_event)
                 when 'bitbucket'
                   bitbucket_push_branch_processor.call(external_provider_event) ||
                     bitbucket_pull_request_processor.call(external_provider_event) ||

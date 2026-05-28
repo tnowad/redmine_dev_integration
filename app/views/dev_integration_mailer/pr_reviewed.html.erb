@@ -1,0 +1,23 @@
+<p><%= l(:text_pr_reviewed_notification, number: @pull_request.number, state: @review_state) %></p>
+
+<p><%= l(:label_pr_details) %>:</p>
+<ul>
+  <li><%= l(:field_status) %>: <%= @pull_request.state %></li>
+  <li><%= l(:label_repository) %>: <%= @pull_request.external_repository.full_name %></li>
+  <li><%= l(:label_source_branch) %>: <%= @pull_request.source_branch %></li>
+  <li><%= l(:label_target_branch) %>: <%= @pull_request.target_branch %></li>
+  <li><%= l(:label_review_state) %>: <%= @review_state %></li>
+</ul>
+
+<% if @issues.any? %>
+  <p><%= l(:label_linked_issues) %>:</p>
+  <ul>
+    <% @issues.each do |issue| %>
+      <li><%= link_to_issue(issue) %></li>
+    <% end %>
+  </ul>
+<% end %>
+
+<% if @pr_url.present? %>
+  <p><%= link_to l(:label_view_pr), @pr_url %></p>
+<% end %>

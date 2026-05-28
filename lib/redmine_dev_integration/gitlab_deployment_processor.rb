@@ -45,6 +45,8 @@ module RedmineDevIntegration
       return false unless external_deployment.status.present?
 
       external_deployment.save!
+      ExternalDeployment.detect_rollback(external_deployment)
+      associate_release(external_deployment, payload)
       text_link_result = external_deployment.link_issues_from_texts(
         external_deployment.ref,
         external_deployment.branch_name,
@@ -53,6 +55,7 @@ module RedmineDevIntegration
       )
       link_traced_issues(external_deployment, trace_issues_for(external_deployment.external_repository, external_deployment.sha)) if text_link_result.issue_ids.empty?
       process_linked_issues(external_deployment, external_provider_event)
+      handle_incidents(external_deployment, repository)
       true
     end
 
@@ -169,6 +172,49 @@ module RedmineDevIntegration
 
     def automation_marker(external_deployment, event_type)
       "deployment:#{external_deployment.provider}:#{external_deployment.id}:#{event_type}"
+    end
+
+    def handle_incidents(external_deployment, repository)
+      if external_deployment.status == 'failed'
+        incident = ExternalIncident.find_or_create_by!(
+          external_repository: repository,
+          external_deployment: external_deployment,
+          status: 'open'
+        ) do |i|
+          i.title = "Deployment failed: #{external_deployment.environment_name}"
+          i.severity = external_deployment.environment_name == 'production' ? 'critical' : 'high'
+          i.started_at = external_deployment.completed_at || Time.current
+        end
+        external_deployment.issues.each do |issue|
+          ExternalIncidentIssue.find_or_create_by!(external_incident: incident, issue: issue)
+        end
+        DevIntegrationMailer.deliver_incident_created(incident) if incident.previous_changes.key?('id')
+      elsif external_deployment.status == 'success'
+        ExternalIncident.where(external_repository: repository, status: %w[open investigating])
+          .update_all(status: 'resolved', resolved_at: external_deployment.completed_at || Time.current)
+      end
+    end
+
+    def associate_release(deployment, payload)
+      ref = payload['ref']
+      return unless ref.present?
+
+      tag_match = ref.match(%r{refs/tags/(.+)})
+      return unless tag_match
+
+      tag_name = tag_match[1]
+      release = ExternalRelease.find_or_create_by!(
+        provider: 'gitlab',
+        external_repository: deployment.external_repository,
+        name: tag_name
+      ) do |r|
+        r.tag_name = tag_name
+        r.status = 'published'
+        r.released_at = Time.current
+      end
+
+      deployment.update_column(:external_release_id, release.id)
+      release.link_issues_from_deployments
     end
   end
 end

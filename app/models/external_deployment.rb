@@ -6,6 +6,7 @@ class ExternalDeployment < ApplicationRecord
   STATUSES = %w[pending in_progress success failed canceled rolled_back unknown].freeze
 
   belongs_to :external_repository
+  belongs_to :external_release, optional: true
   has_many :external_deployment_issues, dependent: :delete_all
   has_many :issues, through: :external_deployment_issues
 
@@ -13,6 +14,21 @@ class ExternalDeployment < ApplicationRecord
   validates :provider_deployment_id,
             uniqueness: {scope: %i[provider external_repository_id environment_name], case_sensitive: true}
   validates :status, inclusion: {in: STATUSES}
+
+  def self.detect_rollback(deployment)
+    return if deployment.rollback?
+
+    previous = where(
+      external_repository_id: deployment.external_repository_id,
+      environment_name: deployment.environment_name
+    ).where.not(id: deployment.id).order(completed_at: :desc, last_event_at: :desc).first
+
+    return unless previous && previous.sha.present? && deployment.sha.present?
+
+    if deployment.sha == previous.sha
+      deployment.update_columns(rollback: true, rolled_back_from_sha: previous.sha, status: 'failed')
+    end
+  end
 
   def link_issues_from_texts(*texts)
     RedmineDevIntegration::IssueLinker.new.link(texts.flatten.compact).tap do |result|

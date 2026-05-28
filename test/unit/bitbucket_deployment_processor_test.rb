@@ -408,6 +408,101 @@ class BitbucketDeploymentProcessorTest < ActiveSupport::TestCase
     assert_nil ExternalDeployment.find_by(provider: 'bitbucket', provider_deployment_id: 'deploy-9006')
   end
 
+  def test_failed_deployment_creates_incident
+    project = Project.generate!(issue_key_prefix: 'AUTH')
+    issue = Issue.generate!(project: project, subject: 'Incident test')
+    @external_repository.update!(redmine_project: project)
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        uuid: 'my-repo-uuid',
+        full_name: 'my-workspace/my-repo'
+      },
+      deployment: {
+        uuid: 'deploy-9010',
+        environment: {
+          name: 'production'
+        },
+        state: {
+          name: 'COMPLETED',
+          result: {
+            name: 'FAILED'
+          }
+        },
+        release: {
+          name: "fix/#{issue.issue_key}-bug",
+          commit: 'abc123',
+          url: 'https://prod.example.test'
+        },
+        comment: "Fix #{issue.issue_key}",
+        deployer: {
+          username: 'contributor',
+          display_name: 'Contributor'
+        },
+        created_on: '2026-05-25T10:00:00Z',
+        started_on: '2026-05-25T10:00:00Z',
+        completed_on: '2026-05-25T10:30:00Z',
+        updated_on: '2026-05-25T10:35:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    incident = ExternalIncident.find_by!(external_repository: @external_repository)
+    assert_equal 'open', incident.status
+    assert_equal 'critical', incident.severity
+    assert_equal 'Deployment failed: production', incident.title
+    assert_equal [issue.id], incident.issues.pluck(:id)
+  end
+
+  def test_successful_deployment_resolves_open_incidents
+    ExternalIncident.create!(
+      external_repository: @external_repository,
+      title: 'Previous failure',
+      status: 'open',
+      severity: 'high',
+      started_at: 1.hour.ago
+    )
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        uuid: 'my-repo-uuid',
+        full_name: 'my-workspace/my-repo'
+      },
+      deployment: {
+        uuid: 'deploy-9011',
+        environment: {
+          name: 'staging'
+        },
+        state: {
+          name: 'COMPLETED',
+          result: {
+            name: 'SUCCESSFUL'
+          }
+        },
+        release: {
+          name: 'main',
+          commit: 'abc123',
+          url: 'https://staging.example.test'
+        },
+        comment: 'Recovery deploy',
+        deployer: {
+          username: 'contributor'
+        },
+        created_on: '2026-05-25T10:00:00Z',
+        started_on: '2026-05-25T10:00:00Z',
+        completed_on: '2026-05-25T10:20:00Z',
+        updated_on: '2026-05-25T10:25:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    incident = ExternalIncident.find_by!(external_repository: @external_repository)
+    assert_equal 'resolved', incident.status
+    assert_not_nil incident.resolved_at
+  end
+
   def test_deployment_links_issue_via_sha_when_text_matching_finds_none
     project = Project.generate!(issue_key_prefix: 'AUTH')
     issue = Issue.generate!(project: project, subject: 'Trace target')
@@ -468,5 +563,62 @@ class BitbucketDeploymentProcessorTest < ActiveSupport::TestCase
 
     assert_equal [issue.id], deployment.issues.pluck(:id)
     assert_equal 1, deployment.external_deployment_issues.count
+  end
+
+  def test_rollback_detection_when_sha_matches_previous_deployment
+    ExternalDeployment.create!(
+      provider: 'bitbucket',
+      external_repository: @external_repository,
+      provider_deployment_id: 'prev-9001',
+      environment_name: 'staging',
+      status: 'success',
+      sha: 'abc123',
+      completed_at: Time.zone.parse('2026-05-24T10:00:00Z')
+    )
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        uuid: 'my-repo-uuid',
+        full_name: 'my-workspace/my-repo'
+      },
+      deployment: {
+        uuid: 'deploy-9001',
+        environment: {
+          name: 'staging'
+        },
+        state: {
+          name: 'COMPLETED',
+          result: {
+            name: 'SUCCESSFUL'
+          }
+        },
+        release: {
+          name: 'main',
+          commit: 'abc123',
+          url: 'https://staging.example.test'
+        },
+        comment: 'Rollback deploy',
+        deployer: {
+          username: 'contributor'
+        },
+        created_on: '2026-05-25T10:00:00Z',
+        started_on: '2026-05-25T10:00:00Z',
+        completed_on: '2026-05-25T10:20:00Z',
+        updated_on: '2026-05-25T10:25:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    deployment = ExternalDeployment.find_by!(
+      provider: 'bitbucket',
+      external_repository: @external_repository,
+      provider_deployment_id: 'deploy-9001',
+      environment_name: 'staging'
+    )
+
+    assert deployment.rollback?
+    assert_equal 'abc123', deployment.rolled_back_from_sha
+    assert_equal 'failed', deployment.status
   end
 end

@@ -8,9 +8,7 @@ class IssueLinkerTest < ActiveSupport::TestCase
   end
 
   def test_resolves_one_valid_key_to_issue_id
-    issue = mock('issue')
-    issue.stubs(:id).returns(42)
-    Issue.stubs(:find_by_issue_key).with('AUTH-1').returns(issue)
+    stub_issue_keys_where('AUTH-1' => 42)
 
     result = @linker.link('AUTH-1')
 
@@ -19,13 +17,7 @@ class IssueLinkerTest < ActiveSupport::TestCase
   end
 
   def test_resolves_multiple_keys
-    first_issue = mock('first_issue')
-    first_issue.stubs(:id).returns(10)
-    second_issue = mock('second_issue')
-    second_issue.stubs(:id).returns(11)
-
-    Issue.stubs(:find_by_issue_key).with('AUTH-1').returns(first_issue)
-    Issue.stubs(:find_by_issue_key).with('BUG-2').returns(second_issue)
+    stub_issue_keys_where('AUTH-1' => 10, 'BUG-2' => 11)
 
     result = @linker.link('AUTH-1 and BUG-2')
 
@@ -34,10 +26,7 @@ class IssueLinkerTest < ActiveSupport::TestCase
   end
 
   def test_unresolved_key_remains_in_matched_keys_but_not_resolved_ids
-    issue = mock('issue')
-    issue.stubs(:id).returns(7)
-    Issue.stubs(:find_by_issue_key).with('AUTH-1').returns(issue)
-    Issue.stubs(:find_by_issue_key).with('BUG-2').returns(nil)
+    stub_issue_keys_where('AUTH-1' => 7)
 
     result = @linker.link('AUTH-1 BUG-2')
 
@@ -46,9 +35,7 @@ class IssueLinkerTest < ActiveSupport::TestCase
   end
 
   def test_lowercase_key_resolves
-    issue = mock('issue')
-    issue.stubs(:id).returns(21)
-    Issue.stubs(:find_by_issue_key).with('AUTH-1').returns(issue)
+    stub_issue_keys_where('AUTH-1' => 21)
 
     result = @linker.link('auth-1')
 
@@ -73,5 +60,14 @@ class IssueLinkerTest < ActiveSupport::TestCase
 
     assert_equal ['AUTH-1'], result.matched_keys
     assert_equal [], result.issue_ids
+  end
+
+  private
+
+  def stub_issue_keys_where(mapping)
+    pluck_data = mapping.map { |key, id| [key.upcase, id] }
+    relation = mock
+    relation.stubs(:pluck).with(:issue_key, :id).returns(pluck_data)
+    Issue.stubs(:where).returns(relation)
   end
 end

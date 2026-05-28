@@ -219,6 +219,222 @@ class IssueDevelopmentPanelDataTest < ActiveSupport::TestCase
     assert_equal [deployment_newer.id, deployment_older.id], data.deployments.pluck(:id)
   end
 
+  def test_branch_count_returns_count_of_active_branches
+    active_branch = ExternalBranch.create!(
+      external_repository: @external_repository,
+      name: 'active',
+      url: 'https://github.com/redmine/redmine_dev_integration/tree/active',
+      sha: 'abc123',
+      state: 'active'
+    )
+    deleted_branch = ExternalBranch.create!(
+      external_repository: @external_repository,
+      name: 'deleted',
+      url: 'https://github.com/redmine/redmine_dev_integration/tree/deleted',
+      sha: 'def456',
+      state: 'deleted',
+      deleted_at: Time.current
+    )
+    active_branch.link_issues_from_texts(@issue.issue_key)
+    deleted_branch.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 1, data.branch_count
+  end
+
+  def test_branch_count_excludes_branches_from_other_projects
+    other_branch = ExternalBranch.create!(
+      external_repository: @other_external_repository,
+      name: 'other',
+      url: 'https://github.com/redmine/other_repo/tree/other',
+      sha: 'def456',
+      state: 'active'
+    )
+    other_branch.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 0, data.branch_count
+  end
+
+  def test_pull_request_count_returns_count_of_pull_requests
+    pr1 = ExternalPullRequest.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      number: 7,
+      title: 'Fix tracked issue',
+      body: nil,
+      url: 'https://github.com/redmine/redmine_dev_integration/pull/7',
+      state: 'open',
+      merged: false
+    )
+    pr2 = ExternalPullRequest.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      number: 8,
+      title: 'Another fix',
+      body: nil,
+      url: 'https://github.com/redmine/redmine_dev_integration/pull/8',
+      state: 'open',
+      merged: false
+    )
+    pr1.link_issues_from_texts(@issue.issue_key)
+    pr2.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 2, data.pull_request_count
+  end
+
+  def test_pull_request_count_excludes_other_projects
+    other_pr = ExternalPullRequest.create!(
+      provider: 'github',
+      external_repository: @other_external_repository,
+      number: 1,
+      title: 'Other PR',
+      body: nil,
+      url: 'https://github.com/redmine/other_repo/pull/1',
+      state: 'open',
+      merged: false
+    )
+    other_pr.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 0, data.pull_request_count
+  end
+
+  def test_build_count_returns_count_of_builds
+    build1 = ExternalBuild.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_build_id: '101',
+      build_number: 101,
+      name: 'Build 101',
+      status: 'success',
+      url: 'https://github.com/redmine/redmine_dev_integration/actions/runs/101',
+      sha: 'abc123',
+      ref: 'main',
+      started_at: Time.current,
+      finished_at: Time.current,
+      last_event_at: Time.current
+    )
+    build2 = ExternalBuild.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_build_id: '102',
+      build_number: 102,
+      name: 'Build 102',
+      status: 'failed',
+      url: 'https://github.com/redmine/redmine_dev_integration/actions/runs/102',
+      sha: 'def456',
+      ref: 'main',
+      started_at: Time.current,
+      finished_at: Time.current,
+      last_event_at: Time.current
+    )
+    build1.link_issues_from_texts(@issue.issue_key)
+    build2.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 2, data.build_count
+  end
+
+  def test_deployment_count_returns_count_of_deployments
+    depl1 = ExternalDeployment.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_deployment_id: '301',
+      environment_name: 'staging',
+      environment_url: 'https://staging.example.test',
+      status: 'success',
+      sha: 'abc123',
+      ref: 'main',
+      started_at: Time.current,
+      completed_at: Time.current,
+      last_event_at: Time.current
+    )
+    depl2 = ExternalDeployment.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_deployment_id: '302',
+      environment_name: 'production',
+      environment_url: 'https://prod.example.test',
+      status: 'success',
+      sha: 'def456',
+      ref: 'main',
+      started_at: Time.current,
+      completed_at: Time.current,
+      last_event_at: Time.current
+    )
+    depl1.link_issues_from_texts(@issue.issue_key)
+    depl2.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 2, data.deployment_count
+  end
+
+  def test_commit_count_returns_count_of_external_commits
+    ec1 = ExternalCommit.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_commit_id: 'abc123def456',
+      sha: 'abc123def4567890',
+      short_sha: 'abc123d',
+      message: 'Tracked issue commit 1',
+      author_login: 'contributor',
+      author_name: 'Contributor',
+      url: 'https://github.com/redmine/redmine_dev_integration/commit/abc123def456',
+      branch_name: 'main',
+      committed_at: Time.current,
+      last_event_at: Time.current
+    )
+    ec2 = ExternalCommit.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_commit_id: 'def456abc789',
+      sha: 'def456abc7890123',
+      short_sha: 'def456a',
+      message: 'Tracked issue commit 2',
+      author_login: 'contributor',
+      author_name: 'Contributor',
+      url: 'https://github.com/redmine/redmine_dev_integration/commit/def456abc789',
+      branch_name: 'main',
+      committed_at: Time.current,
+      last_event_at: Time.current
+    )
+    ec1.link_issues_from_texts(@issue.issue_key)
+    ec2.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_equal 2, data.commit_count
+  end
+
+  def test_any_dev_data_returns_false_when_no_data
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert_not data.any_dev_data?
+  end
+
+  def test_any_dev_data_returns_true_when_any_data_present
+    branch = ExternalBranch.create!(
+      external_repository: @external_repository,
+      name: 'active',
+      url: 'https://github.com/redmine/redmine_dev_integration/tree/active',
+      sha: 'abc123',
+      state: 'active'
+    )
+    branch.link_issues_from_texts(@issue.issue_key)
+
+    data = RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue)
+
+    assert data.any_dev_data?
+  end
+
   def test_orders_branches_and_pull_requests_by_repository_then_name_or_number
     repo_a = ExternalRepository.create!(
       provider: 'github',

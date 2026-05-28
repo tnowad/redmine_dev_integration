@@ -1,0 +1,18 @@
+<%= l(:text_build_failed_notification, build: @build.name, number: @build.build_number) %>
+
+<%= l(:label_build_details) %>:
+* <%= l(:field_status) %>: <%= @build.status %>
+* <%= l(:label_repository) %>: <%= @build.external_repository.full_name %>
+* <%= l(:field_branch) %>: <%= @build.branch_name %>
+* <%= l(:label_sha) %>: <%= @build.sha.to_s.first(7) %>
+
+<% if @issues.any? %>
+<%= l(:label_linked_issues) %>:
+<% @issues.each do |issue| %>
+  * #<%= issue.id %>: <%= issue.subject %>
+<% end %>
+<% end %>
+
+<% if @build_url.present? %>
+<%= l(:label_view_build) %>: <%= @build_url %>
+<% end %>

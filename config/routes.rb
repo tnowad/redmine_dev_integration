@@ -33,9 +33,12 @@ unless route_set.any? {|route| route.path.spec.to_s == '/projects/:project_id/re
         end
       end
       get 'deployment_overview', to: 'projects/deployment_overview#index'
+      get 'releases', to: 'projects/releases#index'
+      get 'dora_metrics', to: 'projects/dora_metrics#show'
     end
   end
 end
+
 
 # OAuth routes
 unless route_set.any? {|route| route.path.spec.to_s == '/dev_integrations/github/oauth/start'}

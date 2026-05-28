@@ -117,33 +117,19 @@ module RedmineDevIntegration
       end
 
       def post_request(uri, body:, headers: {})
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == 'https'
-        http.open_timeout = DEFAULT_TIMEOUT
-        http.read_timeout = DEFAULT_TIMEOUT
-
-        request = Net::HTTP::Post.new(uri.request_uri)
-        headers.each {|key, value| request[key] = value }
-        request.body = JSON.generate(body)
-
-        response = http.request(request)
-        response.value
-        response
+        perform_http_request(uri, headers: headers) do |u|
+          req = Net::HTTP::Post.new(u.request_uri)
+          req.body = JSON.generate(body)
+          req
+        end
       end
 
       def patch_request(uri, body:, headers: {})
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == 'https'
-        http.open_timeout = DEFAULT_TIMEOUT
-        http.read_timeout = DEFAULT_TIMEOUT
-
-        request = Net::HTTP::Patch.new(uri.request_uri)
-        headers.each {|key, value| request[key] = value }
-        request.body = JSON.generate(body)
-
-        response = http.request(request)
-        response.value
-        response
+        perform_http_request(uri, headers: headers) do |u|
+          req = Net::HTTP::Patch.new(u.request_uri)
+          req.body = JSON.generate(body)
+          req
+        end
       end
 
       def put_json(uri, body:, headers: {})
@@ -156,32 +142,32 @@ module RedmineDevIntegration
       end
 
       def put_request(uri, body:, headers: {})
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == 'https'
-        http.open_timeout = DEFAULT_TIMEOUT
-        http.read_timeout = DEFAULT_TIMEOUT
-
-        request = Net::HTTP::Put.new(uri.request_uri)
-        headers.each {|key, value| request[key] = value }
-        request.body = JSON.generate(body)
-
-        response = http.request(request)
-        response.value
-        response
+        perform_http_request(uri, headers: headers) do |u|
+          req = Net::HTTP::Put.new(u.request_uri)
+          req.body = JSON.generate(body)
+          req
+        end
       end
 
       def default_http_getter(uri, headers)
+        perform_http_request(uri, headers: headers) do |u|
+          Net::HTTP::Get.new(u.request_uri)
+        end
+      end
+
+      def perform_http_request(uri, headers: {}, &block)
         http = Net::HTTP.new(uri.host, uri.port)
         http.use_ssl = uri.scheme == 'https'
         http.open_timeout = DEFAULT_TIMEOUT
         http.read_timeout = DEFAULT_TIMEOUT
 
-        request = Net::HTTP::Get.new(uri.request_uri)
-        headers.each {|key, value| request[key] = value }
-
-        response = http.request(request)
-        response.value
-        response
+        http.start do |conn|
+          request = block.call(uri)
+          headers.each { |k, v| request[k] = v }
+          response = conn.request(request)
+          response.value
+          response
+        end
       end
 
       def compact_collection(payload, key = nil)

@@ -164,6 +164,7 @@ class DevIntegrationFullWorkflowTest < ApplicationSystemTestCase
       delivery_id: 'delivery-failed-001',
       event_type: 'push',
       payload: JSON.generate({repository: {id: 12345}}),
+      provider_repository_id: '12345',
       status: 'failed',
       processed_at: 1.hour.ago,
       error_message: 'Something went wrong'
@@ -174,6 +175,7 @@ class DevIntegrationFullWorkflowTest < ApplicationSystemTestCase
       delivery_id: 'delivery-success-001',
       event_type: 'push',
       payload: JSON.generate({repository: {id: 12345}}),
+      provider_repository_id: '12345',
       status: 'processed',
       processed_at: 30.minutes.ago
     )

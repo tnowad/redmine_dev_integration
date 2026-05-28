@@ -229,6 +229,80 @@ class GitlabDeploymentProcessorTest < ActiveSupport::TestCase
     assert_empty deployment.issues
   end
 
+  def test_failed_deployment_creates_incident
+    project = Project.generate!(issue_key_prefix: 'AUTH')
+    issue = Issue.generate!(project: project, subject: 'Incident test')
+    @external_repository.update!(redmine_project: project)
+
+    event = build_event(payload: JSON.generate({
+      deployment_id: 9010,
+      environment: 'production',
+      environment_external_url: 'https://prod.example.test',
+      status: 'failed',
+      sha: 'abc123',
+      ref: "fix/#{issue.issue_key}-bug",
+      commit_title: "Fix #{issue.issue_key}",
+      user: {
+        username: 'contributor',
+        name: 'Contributor'
+      },
+      deployable_started_at: '2026-05-25T10:00:00Z',
+      deployable_finished_at: '2026-05-25T10:30:00Z',
+      created_at: '2026-05-25T10:00:00Z',
+      updated_at: '2026-05-25T10:35:00Z',
+      project: {
+        id: 456,
+        web_url: 'https://gitlab.example.com/redmine/redmine_dev_integration'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    incident = ExternalIncident.find_by!(external_repository: @external_repository)
+    assert_equal 'open', incident.status
+    assert_equal 'critical', incident.severity
+    assert_equal 'Deployment failed: production', incident.title
+    assert_equal [issue.id], incident.issues.pluck(:id)
+  end
+
+  def test_successful_deployment_resolves_open_incidents
+    ExternalIncident.create!(
+      external_repository: @external_repository,
+      title: 'Previous failure',
+      status: 'open',
+      severity: 'high',
+      started_at: 1.hour.ago
+    )
+
+    event = build_event(payload: JSON.generate({
+      deployment_id: 9011,
+      environment: 'staging',
+      environment_external_url: 'https://staging.example.test',
+      status: 'success',
+      sha: 'abc123',
+      ref: 'main',
+      commit_title: 'Recovery deploy',
+      user: {
+        username: 'contributor',
+        name: 'Contributor'
+      },
+      deployable_started_at: '2026-05-25T10:00:00Z',
+      deployable_finished_at: '2026-05-25T10:20:00Z',
+      created_at: '2026-05-25T10:00:00Z',
+      updated_at: '2026-05-25T10:25:00Z',
+      project: {
+        id: 456,
+        web_url: 'https://gitlab.example.com/redmine/redmine_dev_integration'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    incident = ExternalIncident.find_by!(external_repository: @external_repository)
+    assert_equal 'resolved', incident.status
+    assert_not_nil incident.resolved_at
+  end
+
   def test_deployment_hook_links_issue_via_sha_when_text_matching_finds_none
     project = Project.generate!(issue_key_prefix: 'AUTH')
     issue = Issue.generate!(project: project, subject: 'Trace target')
@@ -279,5 +353,52 @@ class GitlabDeploymentProcessorTest < ActiveSupport::TestCase
 
     assert_equal [issue.id], deployment.issues.pluck(:id)
     assert_equal 1, deployment.external_deployment_issues.count
+  end
+
+  def test_rollback_detection_when_sha_matches_previous_deployment
+    ExternalDeployment.create!(
+      provider: 'gitlab',
+      external_repository: @external_repository,
+      provider_deployment_id: 'prev-9001',
+      environment_name: 'staging',
+      status: 'success',
+      sha: 'abc123',
+      completed_at: Time.zone.parse('2026-05-24T10:00:00Z')
+    )
+
+    event = build_event(payload: JSON.generate({
+      deployment_id: 9001,
+      environment: 'staging',
+      environment_external_url: 'https://staging.example.test',
+      status: 'success',
+      sha: 'abc123',
+      ref: 'main',
+      commit_title: 'Rollback deploy',
+      user: {
+        username: 'contributor',
+        name: 'Contributor'
+      },
+      deployable_started_at: '2026-05-25T10:00:00Z',
+      deployable_finished_at: '2026-05-25T10:20:00Z',
+      created_at: '2026-05-25T10:00:00Z',
+      updated_at: '2026-05-25T10:25:00Z',
+      project: {
+        id: 456,
+        web_url: 'https://gitlab.example.com/redmine/redmine_dev_integration'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    deployment = ExternalDeployment.find_by!(
+      provider: 'gitlab',
+      external_repository: @external_repository,
+      provider_deployment_id: '9001',
+      environment_name: 'staging'
+    )
+
+    assert deployment.rollback?
+    assert_equal 'abc123', deployment.rolled_back_from_sha
+    assert_equal 'failed', deployment.status
   end
 end

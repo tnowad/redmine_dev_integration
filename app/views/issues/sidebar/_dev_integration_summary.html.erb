@@ -1,0 +1,26 @@
+<% if RedmineDevIntegration::DevelopmentPanelVisibility.visible_for_project?(@issue.project) &&
+      User.current.allowed_to?(:view_development_integration, @issue.project) %>
+  <% panel = @development_panel_data || RedmineDevIntegration::IssueDevelopmentPanelData.new(@issue) %>
+  <% if panel.any_dev_data? %>
+    <div class="box">
+      <h3 class="icon icon-summary"><%= l(:label_development_tab) %></h3>
+      <ul>
+        <% if panel.branch_count > 0 %>
+          <li><%= l(:label_branch) %>: <%= panel.branch_count %></li>
+        <% end %>
+        <% if panel.pull_request_count > 0 %>
+          <li><%= l(:label_pull_request_plural) %>: <%= panel.pull_request_count %></li>
+        <% end %>
+        <% if panel.commit_count > 0 %>
+          <li><%= l(:label_revision_plural) %>: <%= panel.commit_count %></li>
+        <% end %>
+        <% if panel.build_count > 0 %>
+          <li><%= l(:label_build_plural) %>: <%= panel.build_count %></li>
+        <% end %>
+        <% if panel.deployment_count > 0 %>
+          <li><%= l(:label_deployment_plural) %>: <%= panel.deployment_count %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+<% end %>

@@ -247,6 +247,86 @@ class GitHubDeploymentStatusProcessorTest < ActiveSupport::TestCase
     assert_empty deployment.issues
   end
 
+  def test_failed_deployment_creates_incident
+    project = Project.generate!(issue_key_prefix: 'AUTH')
+    issue = Issue.generate!(project: project, subject: 'Incident test')
+    @external_repository.update!(redmine_project: project)
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        id: 123,
+        html_url: 'https://github.com/redmine/redmine_dev_integration'
+      },
+      deployment: {
+        id: 9010,
+        environment: 'production',
+        sha: 'abc123',
+        ref: "fix/#{issue.issue_key}-bug",
+        description: "Fix #{issue.issue_key}",
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T10:00:00Z'
+      },
+      deployment_status: {
+        state: 'failure',
+        environment_url: 'https://prod.example.test',
+        target_url: 'https://prod.example.test',
+        description: "Fix #{issue.issue_key}",
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T12:00:00Z',
+        updated_at: '2026-05-25T12:05:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    incident = ExternalIncident.find_by!(external_repository: @external_repository)
+    assert_equal 'open', incident.status
+    assert_equal 'critical', incident.severity
+    assert_equal 'Deployment failed: production', incident.title
+    assert_equal [issue.id], incident.issues.pluck(:id)
+  end
+
+  def test_successful_deployment_resolves_open_incidents
+    ExternalIncident.create!(
+      external_repository: @external_repository,
+      title: 'Previous failure',
+      status: 'open',
+      severity: 'high',
+      started_at: 1.hour.ago
+    )
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        id: 123,
+        html_url: 'https://github.com/redmine/redmine_dev_integration'
+      },
+      deployment: {
+        id: 9011,
+        environment: 'staging',
+        sha: 'abc123',
+        ref: 'main',
+        description: 'Recovery deploy',
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T10:00:00Z'
+      },
+      deployment_status: {
+        state: 'success',
+        environment_url: 'https://staging.example.test',
+        target_url: 'https://staging.example.test',
+        description: 'Recovery deploy',
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T12:00:00Z',
+        updated_at: '2026-05-25T12:05:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    incident = ExternalIncident.find_by!(external_repository: @external_repository)
+    assert_equal 'resolved', incident.status
+    assert_not_nil incident.resolved_at
+  end
+
   def test_deployment_status_links_issue_via_sha_when_text_matching_finds_none
     project = Project.generate!(issue_key_prefix: 'AUTH')
     issue = Issue.generate!(project: project, subject: 'Trace target')
@@ -299,5 +379,103 @@ class GitHubDeploymentStatusProcessorTest < ActiveSupport::TestCase
     )
     assert_equal [issue.id], deployment.issues.pluck(:id)
     assert_equal 1, deployment.external_deployment_issues.count
+  end
+
+  def test_rollback_detection_when_sha_matches_previous_deployment
+    previous = ExternalDeployment.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_deployment_id: 'prev-9001',
+      environment_name: 'staging',
+      status: 'success',
+      sha: 'abc123',
+      completed_at: Time.zone.parse('2026-05-24T10:00:00Z')
+    )
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        id: 123,
+        html_url: 'https://github.com/redmine/redmine_dev_integration'
+      },
+      deployment: {
+        id: 9001,
+        environment: 'staging',
+        sha: 'abc123',
+        ref: 'main',
+        description: 'Rollback deploy',
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T10:00:00Z'
+      },
+      deployment_status: {
+        state: 'success',
+        environment_url: 'https://staging.example.test',
+        target_url: 'https://staging.example.test',
+        description: 'Rollback deploy',
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T11:00:00Z',
+        updated_at: '2026-05-25T11:05:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    deployment = ExternalDeployment.find_by!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_deployment_id: '9001',
+      environment_name: 'staging'
+    )
+
+    assert deployment.rollback?
+    assert_equal 'abc123', deployment.rolled_back_from_sha
+    assert_equal 'failed', deployment.status
+  end
+
+  def test_no_rollback_detection_when_sha_differs
+    ExternalDeployment.create!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_deployment_id: 'prev-9002',
+      environment_name: 'staging',
+      status: 'success',
+      sha: 'abc123',
+      completed_at: Time.zone.parse('2026-05-24T10:00:00Z')
+    )
+
+    event = build_event(payload: JSON.generate({
+      repository: {
+        id: 123,
+        html_url: 'https://github.com/redmine/redmine_dev_integration'
+      },
+      deployment: {
+        id: 9002,
+        environment: 'staging',
+        sha: 'def456',
+        ref: 'main',
+        description: 'New deploy',
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T10:00:00Z'
+      },
+      deployment_status: {
+        state: 'success',
+        environment_url: 'https://staging.example.test',
+        target_url: 'https://staging.example.test',
+        description: 'New deploy',
+        creator: {login: 'contributor'},
+        created_at: '2026-05-25T11:00:00Z',
+        updated_at: '2026-05-25T11:05:00Z'
+      }
+    }))
+
+    assert @processor.call(event)
+
+    deployment = ExternalDeployment.find_by!(
+      provider: 'github',
+      external_repository: @external_repository,
+      provider_deployment_id: '9002',
+      environment_name: 'staging'
+    )
+
+    refute deployment.rollback?
   end
 end

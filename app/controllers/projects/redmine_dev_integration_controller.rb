@@ -5,10 +5,11 @@ require 'json'
 module Projects
   class RedmineDevIntegrationController < ApplicationController
     before_action :find_project
-    before_action :authorize_manage_development_integration, except: %i[trigger_provider_sync retry_provider_event]
+    before_action :authorize_manage_development_integration, except: %i[trigger_provider_sync retry_provider_event create_branch]
     before_action :authorize_retry_provider_event, only: :retry_provider_event
     before_action :authorize_trigger_provider_sync, only: :trigger_provider_sync
     before_action :authorize_register_webhook, only: :register_webhook
+    before_action :authorize_create_branch, only: :create_branch
     before_action :find_external_repository, only: %i[edit update destroy trigger_provider_sync register_webhook]
     before_action :find_external_provider_event, only: :retry_provider_event
 
@@ -21,8 +22,8 @@ module Projects
 
     def load_repositories
       provider = params[:provider].to_s.strip
-      return render json: { error: 'Provider required' }, status: :bad_request if provider.blank?
-      return render json: { error: 'Unsupported provider' }, status: :bad_request unless %w[github gitlab bitbucket].include?(provider)
+      return render json: { error: t('redmine_dev_integration.load_repositories.provider_required') }, status: :bad_request if provider.blank?
+      return render json: { error: t('redmine_dev_integration.load_repositories.unsupported_provider') }, status: :bad_request unless %w[github gitlab bitbucket].include?(provider)
 
       client = case provider
                when 'github'
@@ -33,7 +34,7 @@ module Projects
                  RedmineDevIntegration::ProviderClients::BitbucketClient.new
                end
 
-      return render json: { error: 'Provider credentials not configured' }, status: :service_unavailable if client.credentials_missing?
+      return render json: { error: t('redmine_dev_integration.load_repositories.credentials_missing') }, status: :service_unavailable if client.credentials_missing?
 
       repos = client.list_repositories
       render json: { repositories: repos.map { |r| { id: r[:provider_repository_id], full_name: r[:full_name], url: r[:url] } } }
@@ -169,6 +170,21 @@ module Projects
       redirect_to settings_project_path(@project, tab: 'dev_integration_users')
     end
 
+    def create_branch
+      @issue = Issue.visible.find(params[:issue_id])
+      repository = @project.external_repositories.active.find(params[:repository_id])
+      branch_name = generate_branch_name(@issue)
+      redirect_url = repository.branch_url(branch_name)
+      redirect_to redirect_url, allow_other_host: true, status: :see_other
+    end
+
+    def mark_deployment_failed
+      deployment = ExternalDeployment.where(external_repository_id: @project.external_repositories.pluck(:id)).find(params[:deployment_id])
+      deployment.update!(status: 'failed')
+      flash[:notice] = l(:notice_successful_update)
+      redirect_to project_deployment_overview_path(@project)
+    end
+
     private
 
     def find_project
@@ -193,6 +209,10 @@ module Projects
         User.current.allowed_to?(:manage_development_integration, @project)
 
       render_403 unless allowed
+    end
+
+    def authorize_create_branch
+      render_403 unless User.current.allowed_to?(:view_development_integration, @project)
     end
 
     def authorize_register_webhook
@@ -340,14 +360,17 @@ module Projects
     end
 
     def humanize_webhook_error(raw_message, repository)
-      provider = repository.provider.capitalize
-      "#{provider} API rejected webhook creation.\n\n" \
-      "Possible causes:\n" \
-      "- Missing admin:repo_hook scope (classic PAT) or Webhooks write permission (fine-grained PAT)\n" \
-      "- Repository admin permission missing on #{repository.full_name}\n" \
-      "- Token expired or revoked\n\n" \
-      "Repository: #{repository.full_name}\n" \
-      "Raw: #{raw_message}"
+      t('redmine_dev_integration.webhook_register.rejected_by_api',
+        provider: repository.provider.capitalize,
+        repository: repository.full_name,
+        raw_message: raw_message)
+    end
+
+    def generate_branch_name(issue)
+      prefix = params[:prefix].presence || 'feature'
+      slug = issue.subject.parameterize.first(40)
+      key = issue.try(:issue_key) || issue.id.to_s
+      "#{prefix}/#{key}-#{slug}"
     end
   end
 end

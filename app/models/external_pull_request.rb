@@ -7,6 +7,7 @@ class ExternalPullRequest < ApplicationRecord
   belongs_to :external_repository
   has_many :external_pull_request_issues, dependent: :delete_all
   has_many :issues, through: :external_pull_request_issues
+  has_many :external_reviews, dependent: :delete_all
 
   validates :provider, :external_repository, :number, :title, :url, :state, presence: true
   validates :number, uniqueness: {scope: %i[provider external_repository_id], case_sensitive: true}
@@ -15,6 +16,19 @@ class ExternalPullRequest < ApplicationRecord
 
   def sha_values
     SHA_FIELDS.filter_map { |field| public_send(field).presence }
+  end
+
+  def review_state
+    latest = external_reviews.order(submitted_at: :desc).first
+    latest&.state
+  end
+
+  def approved_count
+    external_reviews.approved.count
+  end
+
+  def changes_requested_count
+    external_reviews.changes_requested.count
   end
 
   def link_issues_from_texts(*texts)

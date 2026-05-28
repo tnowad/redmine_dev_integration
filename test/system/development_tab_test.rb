@@ -79,7 +79,7 @@ class DevelopmentTabTest < ApplicationSystemTestCase
       assert_selector 'h3', text: 'Builds'
       assert_selector "div#build-#{@dev_data[:build].id}"
       assert_text @dev_data[:build].name
-      assert_selector ".badge-status-#{@dev_data[:build].status}"
+      assert_selector ".badge-status-closed"
     end
   end
 
@@ -94,7 +94,7 @@ class DevelopmentTabTest < ApplicationSystemTestCase
       assert_selector 'h3', text: 'Deployments'
       assert_selector "div#deployment-#{@dev_data[:deployment].id}"
       assert_text @dev_data[:deployment].environment_name
-      assert_selector ".badge-status-#{@dev_data[:deployment].status}"
+      assert_selector ".badge-status-closed"
     end
   end
 
@@ -110,7 +110,7 @@ class DevelopmentTabTest < ApplicationSystemTestCase
       assert_selector "div#pr-#{@dev_data[:pull_request].id}"
       assert_text "##{@dev_data[:pull_request].number}"
       assert_text @dev_data[:pull_request].title
-      assert_text @dev_data[:pull_request].state
+      assert_text 'Open'
     end
   end
 

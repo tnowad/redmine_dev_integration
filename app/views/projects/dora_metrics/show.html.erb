@@ -1,0 +1,172 @@
+<% content_for :header_tags do %>
+  <%= javascript_include_tag "chart.min" %>
+<% end %>
+
+<div class="contextual">
+  <%= link_to l(:label_last_7_days), { range: 7 }, class: "icon #{@range_days == 7 ? 'icon-checked' : ''}" %>
+  <%= link_to l(:label_last_30_days), { range: 30 }, class: "icon #{@range_days == 30 ? 'icon-checked' : ''}" %>
+  <%= link_to l(:label_last_90_days), { range: 90 }, class: "icon #{@range_days == 90 ? 'icon-checked' : ''}" %>
+</div>
+
+<h2><%= l(:label_dora_metrics) %></h2>
+
+<% if @metrics.deployments_count == 0 %>
+  <p class="nodata"><%= l(:label_no_metrics_data) %></p>
+<% else %>
+  <div class="splitcontent">
+    <div class="splitcontentleft">
+      <div class="box">
+        <h3><%= l(:label_deployment_frequency) %></h3>
+        <p class="total-hours">
+          <%= @metrics.deployment_frequency %>
+          <span style="font-size:86%"><%= l(:label_per_day) %></span>
+        </p>
+        <% trend = @metrics.trend_comparison[:deployment_frequency] %>
+        <% if trend %>
+          <p class="progress-info">
+            <%= trend[:arrow] %> <%= trend[:percent] %>% <%= l(:label_vs_previous, days: @range_days) %>
+          </p>
+        <% end %>
+        <% if @metrics.dora_band %>
+          <p class="progress-info">
+            <%= l(:label_dora_band) %>:
+            <span class="badge badge-status-<%= dora_band_class(@metrics.dora_band) %>">
+              <%= l("label_dora_#{@metrics.dora_band}") %>
+            </span>
+          </p>
+        <% end %>
+      </div>
+
+      <div class="box">
+        <h3><%= l(:label_lead_time_for_changes) %></h3>
+        <p class="total-hours">
+          <%= @metrics.lead_time_hours %>
+          <span style="font-size:86%"><%= l(:label_hours_avg) %></span>
+        </p>
+        <% trend = @metrics.trend_comparison[:lead_time_hours] %>
+        <% if trend %>
+          <p class="progress-info">
+            <%= trend[:arrow] %> <%= trend[:percent] %>% <%= l(:label_vs_previous, days: @range_days) %>
+          </p>
+        <% end %>
+        <% if @metrics.dora_band %>
+          <p class="progress-info">
+            <%= l(:label_dora_band) %>:
+            <span class="badge badge-status-<%= dora_band_class(@metrics.dora_band) %>">
+              <%= l("label_dora_#{@metrics.dora_band}") %>
+            </span>
+          </p>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="splitcontentright">
+      <div class="box">
+        <h3><%= l(:label_change_failure_rate) %></h3>
+        <p class="total-hours">
+          <%= @metrics.change_failure_rate %>%
+        </p>
+        <% trend = @metrics.trend_comparison[:change_failure_rate] %>
+        <% if trend %>
+          <p class="progress-info">
+            <%= trend[:arrow] %> <%= trend[:percent] %>% <%= l(:label_vs_previous, days: @range_days) %>
+          </p>
+        <% end %>
+        <% if @metrics.dora_band %>
+          <p class="progress-info">
+            <%= l(:label_dora_band) %>:
+            <span class="badge badge-status-<%= dora_band_class(@metrics.dora_band) %>">
+              <%= l("label_dora_#{@metrics.dora_band}") %>
+            </span>
+          </p>
+        <% end %>
+        <%= progress_bar(@metrics.change_failure_rate,
+              legend: "#{@metrics.failures_count}/#{@metrics.deployments_count}",
+              titles: [l(:label_failed_deployments)]) %>
+      </div>
+
+      <div class="box">
+        <h3><%= l(:label_mean_time_to_recovery) %></h3>
+        <p class="total-hours">
+          <%= @metrics.mttr_hours %>
+          <span style="font-size:86%"><%= l(:label_hours_avg) %></span>
+        </p>
+        <% trend = @metrics.trend_comparison[:mttr_hours] %>
+        <% if trend %>
+          <p class="progress-info">
+            <%= trend[:arrow] %> <%= trend[:percent] %>% <%= l(:label_vs_previous, days: @range_days) %>
+          </p>
+        <% end %>
+        <% if @metrics.dora_band %>
+          <p class="progress-info">
+            <%= l(:label_dora_band) %>:
+            <span class="badge badge-status-<%= dora_band_class(@metrics.dora_band) %>">
+              <%= l("label_dora_#{@metrics.dora_band}") %>
+            </span>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="box">
+    <h3><%= l(:label_deployment_trend) %></h3>
+    <div class="issue-report-graph">
+      <canvas id="deploy-trend-chart" height="80"></canvas>
+    </div>
+  </div>
+
+  <div class="autoscroll">
+    <table class="list">
+      <thead>
+        <tr>
+          <th><%= l(:label_environment) %></th>
+          <th><%= l(:label_deployment_plural) %></th>
+          <th><%= l(:label_successful) %></th>
+          <th><%= l(:label_failed) %></th>
+          <th><%= l(:label_change_failure_rate) %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @metrics.env_breakdown.each do |env| %>
+          <tr>
+            <td class="name"><%= h(env[:environment]) %></td>
+            <td><%= env[:deployments] %></td>
+            <td><%= env[:successes] %></td>
+            <td><%= env[:failures] %></td>
+            <td><%= env[:failure_rate] %>%</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+
+<%= javascript_tag do %>
+  (function() {
+    var canvas = document.getElementById('deploy-trend-chart');
+    if (!canvas || !window.Chart) return;
+    var ctx = canvas.getContext('2d');
+    var trendData = <%= raw @metrics.trend_data.to_json %>;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: trendData.map(function(d) { return d.date; }),
+        datasets: [{
+          label: '<%= j l(:label_successful_deployments) %>',
+          data: trendData.map(function(d) { return d.count; }),
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--oc-green-4').trim() || '#40c057',
+          borderRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } },
+          x: { ticks: { maxTicksLimit: 15 } }
+        }
+      }
+    });
+  })();
+<% end %>

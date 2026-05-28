@@ -25,10 +25,17 @@ module RedmineDevIntegration
     def resolve_issue_ids(keys)
       return missing_companion_warning unless issue_find_by_issue_key_available?
 
-      keys.filter_map do |key|
-        issue = Issue.find_by_issue_key(key)
-        issue&.id
-      end.uniq
+      normalized = keys.map { |k| k.to_s.strip.upcase }.reject(&:blank?).uniq
+      return [] if normalized.empty?
+
+      valid_keys = normalized.select { |k| k.match?(/\A[A-Z][A-Z0-9]{1,15}-\d+\z/) }
+      return [] if valid_keys.empty?
+
+      Issue.where(issue_key: valid_keys).pluck(:issue_key, :id)
+           .each_with_object({}) { |(k, id), h| h[k.upcase] = id }
+           .values_at(*normalized)
+           .compact
+           .uniq
     end
 
     def issue_find_by_issue_key_available?

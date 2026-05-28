@@ -1,0 +1,23 @@
+<%= l(:text_deployment_failed_notification, environment: @deployment.environment_name) %>
+
+<%= l(:label_deployment_details) %>:
+* <%= l(:field_status) %>: <%= @deployment.status %>
+* <%= l(:label_repository) %>: <%= @deployment.external_repository.full_name %>
+* <%= l(:label_environment) %>: <%= @deployment.environment_name %>
+<% if @deployment.branch_name.present? %>
+* <%= l(:field_branch) %>: <%= @deployment.branch_name %>
+<% end %>
+<% if @deployment.sha.present? %>
+* <%= l(:label_sha) %>: <%= @deployment.sha.to_s.first(7) %>
+<% end %>
+
+<% if @issues.any? %>
+<%= l(:label_linked_issues) %>:
+<% @issues.each do |issue| %>
+  * #<%= issue.id %>: <%= issue.subject %>
+<% end %>
+<% end %>
+
+<% if @deployment_url.present? %>
+<%= l(:label_view_deployment) %>: <%= @deployment_url %>
+<% end %>

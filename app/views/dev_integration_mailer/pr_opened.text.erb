@@ -1,0 +1,24 @@
+<%= l(:text_pr_opened_notification, number: @pull_request.number, title: @pull_request.title) %>
+
+<%= l(:label_pr_details) %>:
+* <%= l(:field_status) %>: <%= @pull_request.state %>
+* <%= l(:label_repository) %>: <%= @pull_request.external_repository.full_name %>
+* <%= l(:label_source_branch) %>: <%= @pull_request.source_branch %>
+* <%= l(:label_target_branch) %>: <%= @pull_request.target_branch %>
+* <%= l(:label_author) %>: <%= @pull_request.author_login %>
+
+<% if @pull_request.body.present? %>
+<%= l(:label_description) %>:
+<%= truncate(@pull_request.body, length: 500) %>
+<% end %>
+
+<% if @issues.any? %>
+<%= l(:label_linked_issues) %>:
+<% @issues.each do |issue| %>
+  * #<%= issue.id %>: <%= issue.subject %>
+<% end %>
+<% end %>
+
+<% if @pr_url.present? %>
+<%= l(:label_view_pr) %>: <%= @pr_url %>
+<% end %>

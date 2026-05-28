@@ -86,6 +86,21 @@ class ExternalRepositoryTest < ActiveSupport::TestCase
     assert_predicate @external_repository, :valid?
   end
 
+  def test_branch_url_github
+    repo = ExternalRepository.new(provider: 'github', url: 'https://github.com/owner/repo')
+    assert_equal 'https://github.com/owner/repo/tree/feature/test', repo.branch_url('feature/test')
+  end
+
+  def test_branch_url_gitlab
+    repo = ExternalRepository.new(provider: 'gitlab', url: 'https://gitlab.example.com/group/repo')
+    assert_equal 'https://gitlab.example.com/group/repo/-/tree/fix/bug-42', repo.branch_url('fix/bug-42')
+  end
+
+  def test_branch_url_bitbucket
+    repo = ExternalRepository.new(provider: 'bitbucket', url: 'https://bitbucket.org/team/repo')
+    assert_equal 'https://bitbucket.org/team/repo/src/hotfix/crash', repo.branch_url('hotfix/crash')
+  end
+
   private
 
   def build_repository(attributes = {})

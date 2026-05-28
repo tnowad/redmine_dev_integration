@@ -18,12 +18,25 @@ class ExternalRepository < ApplicationRecord
 
   validate :redmine_repository_belongs_to_redmine_project
 
+  scope :active, -> { where(active: true) }
+
   REGISTERED_WEBHOOK_STATUS = 'registered'
   NOT_REGISTERED_WEBHOOK_STATUS = 'not_registered'
   ERROR_WEBHOOK_STATUS = 'error'
 
   def webhook_registered?
     webhook_registration_status == REGISTERED_WEBHOOK_STATUS
+  end
+
+  def branch_url(branch_name)
+    case provider
+    when 'github'
+      "#{url}/tree/#{branch_name}"
+    when 'gitlab'
+      "#{url}/-/tree/#{branch_name}"
+    when 'bitbucket'
+      "#{url}/src/#{branch_name}"
+    end
   end
 
   private

@@ -131,6 +131,7 @@ class RedmineDevIntegrationPartialTest < ActionView::TestCase
       delivery_id: 'delivery-failed',
       event_type: 'push',
       payload: JSON.generate({repository: {id: 123}}),
+      provider_repository_id: '123',
       status: 'failed',
       processed_at: Time.utc(2026, 5, 26, 1, 2, 3),
       error_message: 'RuntimeError: boom'
@@ -140,6 +141,7 @@ class RedmineDevIntegrationPartialTest < ActionView::TestCase
       delivery_id: 'delivery-processed',
       event_type: 'pull_request',
       payload: JSON.generate({repository: {id: 123}}),
+      provider_repository_id: '123',
       status: 'processed',
       processed_at: Time.utc(2026, 5, 26, 1, 5, 0)
     )
@@ -148,6 +150,7 @@ class RedmineDevIntegrationPartialTest < ActionView::TestCase
       delivery_id: 'delivery-pending',
       event_type: 'Pipeline Hook',
       payload: JSON.generate({project: {id: 456}}),
+      provider_repository_id: '456',
       status: 'pending'
     )
     ExternalProviderEvent.create!(
@@ -155,6 +158,7 @@ class RedmineDevIntegrationPartialTest < ActionView::TestCase
       delivery_id: 'delivery-ignored',
       event_type: 'Merge Request Hook',
       payload: JSON.generate({project: {id: 456}}),
+      provider_repository_id: '456',
       status: 'ignored'
     )
     ExternalProviderEvent.create!(
@@ -162,6 +166,7 @@ class RedmineDevIntegrationPartialTest < ActionView::TestCase
       delivery_id: 'delivery-foreign',
       event_type: 'push',
       payload: JSON.generate({repository: {id: 999}}),
+      provider_repository_id: '999',
       status: 'failed'
     )
     ExternalProviderEvent.create!(

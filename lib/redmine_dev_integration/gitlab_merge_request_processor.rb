@@ -30,6 +30,11 @@ module RedmineDevIntegration
         pull_request.target_branch
       )
       process_linked_issues(pull_request, payload, external_provider_event)
+
+      if %w[approved unapproved].include?(payload.dig('object_attributes', 'action'))
+        handle_mr_approval(payload, pull_request)
+      end
+
       true
     end
 
@@ -150,11 +155,12 @@ module RedmineDevIntegration
     end
 
     def pull_request_note(pull_request, event_type)
-      parts = ["PR #{event_type.to_s.sub('pr_', '').tr('_', ' ')}: ##{pull_request.number}"]
-      parts << pull_request.url if pull_request.url.present?
-      parts << "source=#{pull_request.source_branch}" if pull_request.source_branch.present?
-      parts << "target=#{pull_request.target_branch}" if pull_request.target_branch.present?
-      parts.join(' | ')
+      I18n.t('redmine_dev_integration.pull_request.note_format',
+             event_type: event_type.to_s.sub('pr_', '').tr('_', ' '),
+             number: pull_request.number,
+             url: pull_request.url.presence || '',
+             source: pull_request.source_branch.presence || '',
+             target: pull_request.target_branch.presence || '')
     end
 
     def audit_marker(pull_request, event_type, issue)
@@ -163,6 +169,20 @@ module RedmineDevIntegration
 
     def automation_marker(pull_request, event_type, issue)
       "gitlab:pr:#{pull_request.id}:#{event_type}:#{issue.id}"
+    end
+
+    def handle_mr_approval(payload, pull_request)
+      user_data = payload['user'] || {}
+      review = ExternalReview.find_or_initialize_by(
+        provider: 'gitlab',
+        external_pull_request: pull_request,
+        provider_review_id: [payload.dig('object_attributes', 'id'), 'approval', payload.dig('object_attributes', 'updated_at')].join('-')
+      )
+      review.reviewer_login = user_data['username']
+      review.reviewer_name = user_data['name'] || user_data['username']
+      review.state = payload.dig('object_attributes', 'action') == 'approved' ? 'APPROVED' : 'CHANGES_REQUESTED'
+      review.submitted_at = time_value(payload.dig('object_attributes', 'updated_at'))
+      review.save!
     end
   end
 end

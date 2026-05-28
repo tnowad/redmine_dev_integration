@@ -130,6 +130,14 @@ en:
       connected: "Successfully connected %{provider} OAuth."
       disconnected: "%{provider} OAuth disconnected."
       error: "OAuth error: %{message}"
+    webhook_register:
+      rejected_by_api: "%{provider} API rejected webhook creation.\n\nPossible causes:\n- Missing admin:repo_hook scope (classic PAT) or Webhooks write permission (fine-grained PAT)\n- Repository admin permission missing on %{repository}\n- Token expired or revoked\n\nRepository: %{repository}\nRaw: %{raw_message}"
+    load_repositories:
+      provider_required: Provider required
+      unsupported_provider: Unsupported provider
+      credentials_missing: Provider credentials not configured
+    pull_request:
+      note_format: "PR %{event_type}: #%{number} | %{url} | source=%{source} | target=%{target}"
   label_redmine_dev_integration_general: General
   label_redmine_dev_integration_smart_commits: Smart Commits
   label_redmine_dev_integration_branch_pr_automation: Branch / Pull request automation
@@ -169,6 +177,8 @@ en:
   label_redmine_dev_integration_load_repos: Load repositories
   label_redmine_dev_integration_select_repo: Select a repository...
   label_redmine_dev_integration_open_in_provider: Open in provider
+  label_create_branch: Create branch
+  label_branch_prefix: Branch prefix
 
   label_dev_integration_settings: Development Settings
   label_dev_integration_repos: Repositories
@@ -219,3 +229,77 @@ en:
   text_automation_deploy_staging_info: When deployment to staging succeeds, linked issues transition to this status.
   text_automation_deploy_production_info: When deployment to production succeeds, linked issues transition to this status.
   text_automation_deploy_failed_info: When a deployment fails, linked issues transition to this status and/or a note is added.
+  label_review_approved: Approved
+  label_review_changes_requested: Changes requested
+  label_release_plural: Releases
+  label_release: Release
+  field_release_name: Release name
+  field_release_tag: Tag
+  label_no_data_releases: No releases yet.
+
+  label_merged: Merged
+  text_create_branch_help: Creates a branch in the selected repository. The branch name will include the issue key.
+  label_build_status_success: Success
+  label_build_status_failed: Failed
+  label_build_status_in_progress: In Progress
+  label_build_status_queued: Queued
+  label_build_status_canceled: Canceled
+  label_build_status_skipped: Skipped
+  label_deployment_status_success: Success
+  label_deployment_status_failed: Failed
+  label_deployment_status_pending: Pending
+  label_deployment_status_in_progress: In Progress
+  label_review_state_APPROVED: Approved
+  label_review_state_CHANGES_REQUESTED: Changes Requested
+  label_pr_state_open: Open
+  label_pr_state_closed: Closed
+
+  label_dora_metrics: DORA Metrics
+  label_deployment_frequency: Deployment Frequency
+  label_lead_time_for_changes: Lead Time for Changes
+  label_change_failure_rate: Change Failure Rate
+  label_mean_time_to_recovery: Mean Time to Recovery
+  label_deploys_per_day: deploys/day
+  label_hours_avg: h avg
+  label_time_from_pr_to_deploy: Average time from PR open to deployment success
+  label_time_from_failure_to_recovery: Average time from failure to next success
+  label_no_metrics_data: No deployment data yet.
+  label_dora_elite: Elite
+  label_dora_high: High
+  label_dora_medium: Medium
+  label_dora_low: Low
+  label_dora_band: Performance
+  label_per_day: /day
+  label_vs_previous: "vs previous %{days}d"
+  label_total_deployments: "%{count} total deployments"
+  label_failed_deployments: Failed deployments
+  label_deployment_trend: Deployment Frequency Trend
+  label_successful_deployments: Successful deployments
+  label_successful: Successful
+  label_failed: Failed
+  label_environment: Environment
+  label_last_7_days: Last 7 days
+  label_last_30_days: Last 30 days
+  label_last_90_days: Last 90 days
+
+  label_incident_plural: Incidents
+  label_incident: Incident
+  field_severity: Severity
+  field_affected_service: Affected Service
+  label_duration: Duration
+  label_incident_status_open: Open
+  label_incident_status_investigating: Investigating
+  label_incident_status_mitigated: Mitigated
+  label_incident_status_resolved: Resolved
+  label_incident_status_postmortem: Postmortem
+  label_severity_critical: Critical
+  label_severity_high: High
+  label_severity_medium: Medium
+  label_severity_low: Low
+
+  label_rollback: Rollback
+  label_mark_deployment_failed: Mark as failed
+  label_mark_deployment_failed_confirm: Mark this deployment as failed?
+
+
+

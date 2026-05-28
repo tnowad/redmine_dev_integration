@@ -59,9 +59,8 @@ class IssuesControllerPatchTest < Redmine::ControllerTest
     get :issue_tab, params: {id: @issue.id, name: 'development', format: 'js'}, xhr: true
 
     assert_response :success
-    assert_select 'div.development-panel' do
-      assert_select 'section.development-panel-section', 5
-      assert_select 'p.nodata', 5
+    assert_select 'div#development-integration' do
+      assert_select 'p.nodata', 6
     end
   end
 
@@ -86,8 +85,7 @@ class IssuesControllerPatchTest < Redmine::ControllerTest
     get :issue_tab, params: {id: @issue.id, name: 'development', format: 'js'}, xhr: true
 
     assert_response :success
-    assert_select 'div.development-panel' do
-      assert_select 'section.development-panel-section', 3
+    assert_select 'div#development-integration' do
       assert_select 'h3', text: 'Builds', count: 0
       assert_select 'h3', text: 'Deployments', count: 0
     end
@@ -102,7 +100,7 @@ class IssuesControllerPatchTest < Redmine::ControllerTest
     get :issue_tab, params: {id: issue.id, name: 'development', format: 'js'}, xhr: true
 
     assert_response :success
-    assert_select 'div.development-panel' do
+    assert_select 'div#development-integration' do
       assert_select 'h3', text: /Revisions/
       assert_select 'div.changeset.journal'
       assert_select 'div.changeset-comments'
@@ -202,8 +200,7 @@ class IssuesControllerPatchTest < Redmine::ControllerTest
     get :issue_tab, params: {id: issue.id, name: 'development', format: 'js'}, xhr: true
 
     assert_response :success
-    assert_select 'div.development-panel' do
-      assert_select 'section.development-panel-section', 5
+    assert_select 'div#development-integration' do
       assert_select 'div.changeset.journal'
       assert_select 'h3', text: /Revisions/
       assert_select 'h3', text: 'Builds'

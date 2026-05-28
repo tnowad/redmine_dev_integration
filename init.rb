@@ -39,6 +39,13 @@ Redmine::Plugin.register :redmine_dev_integration do
     'bitbucket_oauth_token_expires_at' => ''
   }, partial: 'settings/redmine_dev_integration'
 
+  menu :project_menu, :dora_metrics,
+       { controller: 'projects/dora_metrics', action: 'show' },
+       param: :project_id,
+       caption: :label_dora_metrics,
+       after: :activity,
+       permission: :view_development_integration
+
   project_module :redmine_dev_integration do
     permission :view_development_integration, {}, require: :member
     permission :manage_development_integration, {}, require: :member
@@ -78,6 +85,7 @@ require_relative 'lib/redmine_dev_integration/issue_linker'
 require_relative 'lib/redmine_dev_integration/issue_development_panel_data'
 require_relative 'lib/redmine_dev_integration/development_panel_visibility'
 require_relative 'lib/redmine_dev_integration/project_patch'
+require_relative 'lib/redmine_dev_integration/metrics_service'
 require_relative 'lib/redmine_dev_integration/setting_patch'
 require_relative 'lib/redmine_dev_integration/projects_helper_patch'
 require_relative 'lib/redmine_dev_integration/issues_helper_patch'
@@ -92,12 +100,15 @@ require_relative 'lib/redmine_dev_integration/oauth_state_store'
 require_relative 'lib/redmine_dev_integration/oauth/token_store'
 require_relative 'lib/redmine_dev_integration/oauth/github_authorization_service'
 require_relative 'lib/redmine_dev_integration/oauth/gitlab_authorization_service'
+require_relative 'lib/redmine_dev_integration/metrics_service'
+require_relative 'lib/redmine_dev_integration/dev_integration_hook_listener'
+require_relative 'app/models/dev_integration_mailer'
 
 apply_redmine_dev_integration_patches = lambda do
   ProjectsHelper.prepend RedmineDevIntegration::ProjectsHelperPatch unless ProjectsHelper < RedmineDevIntegration::ProjectsHelperPatch
   IssuesHelper.prepend RedmineDevIntegration::IssuesHelperPatch unless IssuesHelper < RedmineDevIntegration::IssuesHelperPatch
   IssuesController.prepend RedmineDevIntegration::IssuesControllerPatch unless IssuesController < RedmineDevIntegration::IssuesControllerPatch
-  Project.include RedmineDevIntegration::ProjectPatch unless Project < RedmineDevIntegration::ProjectPatch
+  Project.include RedmineDevIntegration::ProjectPatch
   Setting.singleton_class.prepend RedmineDevIntegration::SettingPatch unless Setting.singleton_class < RedmineDevIntegration::SettingPatch
   Changeset.include RedmineDevIntegration::ChangesetPatch unless Changeset < RedmineDevIntegration::ChangesetPatch
 end
@@ -110,32 +121,44 @@ end
 
 apply_redmine_dev_integration_patches.call
 
-# Auto-reconciliation: checks once every 15 minutes if any active repositories
-# are due for reconciliation, triggered by the next incoming request.
-reconciliation_scheduler = lambda do
-  lock_key = 'redmine_dev_integration:auto_reconcile_lock'
-  last_run_key = 'redmine_dev_integration:auto_reconcile_last_run'
-
-  last_run = Rails.cache.read(last_run_key)
-  return if last_run && last_run > 15.minutes.ago
-
-  return unless Rails.cache.write(lock_key, true, expires_in: 30.seconds, unless_exist: true)
-
-  begin
-    Rails.cache.write(last_run_key, Time.current, expires_in: 1.hour)
-    runner = RedmineDevIntegration::ScheduledReconciliationRunner.new
-    runner.call
-  rescue StandardError => e
-    Rails.logger.warn "[DevIntegration] Auto-reconciliation failed: #{e.message}"
-  ensure
-    Rails.cache.delete(lock_key)
-  end
-end
-
 Rails.application.config.after_initialize do
+  next unless defined?(RedmineDevIntegration::ScheduledReconciliationRunner)
+
   ActiveSupport::Notifications.subscribe('process_action.action_controller') do
-    reconciliation_scheduler.call if defined?(RedmineDevIntegration::ScheduledReconciliationRunner)
+    # Per-request overhead: one Time.current comparison (~nanoseconds).
+    # The 15-min guard prevents the SETNX below from firing more than
+    # once every 15 minutes per process; SETNX itself is O(1) in Redis.
+    @recon_last_check ||= Time.at(0)
+    next if Time.current - @recon_last_check < 15.minutes
+    @recon_last_check = Time.current
+
+    lock_key = 'redmine_dev_integration:auto_reconcile_lock'
+    next unless Rails.cache.write(lock_key, true, expires_in: 30.seconds, unless_exist: true)
+
+    begin
+      ReconciliationJob.perform_later
+    rescue StandardError => e
+      Rails.logger.warn "[DevIntegration] Auto-reconciliation enqueue failed: #{e.message}"
+    ensure
+      Rails.cache.delete(lock_key)
+    end
   end
 end
 
 load plugin_root.join('config/routes.rb')
+
+unless Rails.application.routes.named_routes.key?(:dev_mark_deployment_failed)
+  Rails.application.routes.append do
+    resources :projects, only: [] do
+      post 'deployments/:deployment_id/mark_failed', to: 'projects/redmine_dev_integration#mark_deployment_failed', as: :dev_mark_deployment_failed
+    end
+  end
+end
+
+unless Rails.application.routes.named_routes.key?(:create_branch_dev_integration)
+  Rails.application.routes.append do
+    get '/projects/:project_id/issues/:issue_id/dev_integration/create_branch',
+        to: 'projects/redmine_dev_integration#create_branch',
+        as: :create_branch_dev_integration
+  end
+end

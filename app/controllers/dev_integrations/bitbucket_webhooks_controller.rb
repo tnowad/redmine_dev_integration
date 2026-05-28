@@ -18,6 +18,7 @@ module DevIntegrations
 
       event.payload = request.raw_post
       event.status = 'pending'
+      event.provider_repository_id = extract_repository_id(request.raw_post)
 
       if event.save
         ExternalProviderEventJob.perform_later(event.id)
@@ -70,6 +71,13 @@ module DevIntegrations
       request.headers['X-Request-Id'].presence ||
         request.headers['X-Event-Key'].presence ||
         ''
+    end
+
+    def extract_repository_id(raw_post)
+      payload = JSON.parse(raw_post)
+      payload.dig('repository', 'full_name')
+    rescue JSON::ParserError, TypeError
+      nil
     end
   end
 end

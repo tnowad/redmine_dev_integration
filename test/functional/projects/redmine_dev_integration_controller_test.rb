@@ -14,6 +14,7 @@ class Projects::RedmineDevIntegrationControllerTest < Redmine::ControllerTest
     Role.find(1).add_permission! :manage_development_integration
     Role.find(1).add_permission! :manage_provider_webhooks
     Role.find(1).add_permission! :trigger_provider_sync
+    Role.find(1).add_permission! :view_development_integration
     @request.session[:user_id] = 2
     @original_queue_adapter = ActiveJob::Base.queue_adapter
     ActiveJob::Base.queue_adapter = :test
@@ -377,6 +378,142 @@ class Projects::RedmineDevIntegrationControllerTest < Redmine::ControllerTest
     end
 
     assert_response :forbidden
+  end
+
+  def test_create_branch_redirects_to_github
+    issue = Issue.generate!(project: @project, subject: 'Fix login bug')
+    repo = ExternalRepository.create!(valid_attributes.merge(redmine_project: @project))
+
+    get :create_branch, params: {project_id: @project, issue_id: issue.id, repository_id: repo.id}
+
+    assert_response :redirect
+    assert_equal 303, response.status
+    assert_match %r{github\.com/redmine/redmine_dev_integration/tree/feature/}, response.location
+    assert_match %r{-fix-login-bug\b}, response.location
+  end
+
+  def test_create_branch_with_custom_prefix
+    issue = Issue.generate!(project: @project, subject: 'Hotfix crash')
+    repo = ExternalRepository.create!(valid_attributes.merge(redmine_project: @project))
+
+    get :create_branch, params: {
+      project_id: @project,
+      issue_id: issue.id,
+      repository_id: repo.id,
+      prefix: 'hotfix'
+    }
+
+    assert_response :redirect
+    assert_match %r{github\.com/redmine/redmine_dev_integration/tree/hotfix/}, response.location
+  end
+
+  def test_create_branch_uses_issue_id_when_no_issue_key
+    issue = Issue.generate!(project: @project, subject: 'Test')
+    repo = ExternalRepository.create!(valid_attributes.merge(redmine_project: @project))
+
+    get :create_branch, params: {project_id: @project, issue_id: issue.id, repository_id: repo.id}
+
+    assert_response :redirect
+    assert_match %r{/tree/feature/}, response.location
+  end
+
+  def test_create_branch_redirects_to_gitlab
+    issue = Issue.generate!(project: @project, subject: 'Fix login bug')
+    repo = ExternalRepository.create!(
+      valid_attributes.merge(
+        redmine_project: @project,
+        provider: 'gitlab',
+        provider_repository_id: '456',
+        url: 'https://gitlab.example.com/redmine/repo'
+      )
+    )
+
+    get :create_branch, params: {project_id: @project, issue_id: issue.id, repository_id: repo.id}
+
+    assert_response :redirect
+    assert_match %r{gitlab\.example\.com/redmine/repo/-/tree/feature/}, response.location
+  end
+
+  def test_create_branch_redirects_to_bitbucket
+    issue = Issue.generate!(project: @project, subject: 'Fix login bug')
+    repo = ExternalRepository.create!(
+      valid_attributes.merge(
+        redmine_project: @project,
+        provider: 'bitbucket',
+        provider_repository_id: '550e8400-e29b-41d4-a716-446655440000',
+        url: 'https://bitbucket.org/team/repo'
+      )
+    )
+
+    get :create_branch, params: {project_id: @project, issue_id: issue.id, repository_id: repo.id}
+
+    assert_response :redirect
+    assert_match %r{bitbucket\.org/team/repo/src/feature/}, response.location
+  end
+
+  def test_create_branch_denied_without_view_permission
+    @request.session[:user_id] = 3
+    issue = Issue.generate!(project: @project, subject: 'Test')
+    repo = ExternalRepository.create!(valid_attributes.merge(redmine_project: @project))
+
+    get :create_branch, params: {project_id: @project, issue_id: issue.id, repository_id: repo.id}
+
+    assert_response :forbidden
+  end
+
+  def test_create_branch_rejects_inactive_repository
+    issue = Issue.generate!(project: @project, subject: 'Test')
+    repo = ExternalRepository.create!(valid_attributes.merge(redmine_project: @project, active: false))
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      get :create_branch, params: {project_id: @project, issue_id: issue.id, repository_id: repo.id}
+    end
+  end
+
+  def test_mark_deployment_failed
+    repository = ExternalRepository.create!(valid_attributes.merge(redmine_project: @project))
+    deployment = ExternalDeployment.create!(
+      provider: 'github',
+      external_repository: repository,
+      provider_deployment_id: 'deploy-mark-fail',
+      environment_name: 'production',
+      status: 'success',
+      sha: 'abc123'
+    )
+
+    post :mark_deployment_failed, params: {project_id: @project.identifier, deployment_id: deployment.id}
+
+    assert_redirected_to project_deployment_overview_path(@project)
+    assert_equal 'failed', deployment.reload.status
+    assert_equal 'Successful update.', flash[:notice]
+  end
+
+  def test_mark_deployment_failed_scoped_to_project
+    other_project = projects(:projects_002)
+    other_repo = ExternalRepository.create!(
+      provider: 'github',
+      provider_repository_id: '999',
+      owner: 'other',
+      repo_name: 'other-project',
+      full_name: 'other/other-project',
+      url: 'https://github.com/other/other-project',
+      redmine_project: other_project,
+      active: true
+    )
+    deployment = ExternalDeployment.create!(
+      provider: 'github',
+      external_repository: other_repo,
+      provider_deployment_id: 'deploy-other',
+      environment_name: 'production',
+      status: 'success',
+      sha: 'abc123'
+    )
+
+    assert_raises(ActiveRecord::RecordNotFound) do
+      post :mark_deployment_failed, params: {project_id: @project.identifier, deployment_id: deployment.id}
+    end
+
+    assert_equal 'success', deployment.reload.status
   end
 
   private

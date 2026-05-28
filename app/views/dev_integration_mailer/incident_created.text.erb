@@ -1,0 +1,16 @@
+<%= l(:text_incident_created_notification, title: @incident.title) %>
+
+<%= l(:label_incident_details) %>:
+* <%= l(:field_severity) %>: <%= @incident.severity %>
+* <%= l(:field_status) %>: <%= @incident.status %>
+* <%= l(:label_repository) %>: <%= @incident.external_repository.full_name %>
+<% if @incident.external_deployment.present? %>
+* <%= l(:label_environment) %>: <%= @incident.external_deployment.environment_name %>
+<% end %>
+
+<% if @issues.any? %>
+<%= l(:label_linked_issues) %>:
+<% @issues.each do |issue| %>
+  * #<%= issue.id %>: <%= issue.subject %>
+<% end %>
+<% end %>
