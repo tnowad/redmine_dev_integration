@@ -85,7 +85,7 @@ class DevIntegrationFullWorkflowTest < ApplicationSystemTestCase
     visit new_project_redmine_dev_integration_path(@project)
 
     within "form[action*='redmine_dev_integration']" do
-      select 'GitHub', from: 'external_repository_provider'
+      select 'Github', from: 'external_repository_provider'
       fill_in 'external_repository_repository_url_or_path', with: 'owner/repo'
       fill_in 'external_repository_provider_repository_id', with: '12345'
       click_button 'Create'
@@ -142,8 +142,8 @@ class DevIntegrationFullWorkflowTest < ApplicationSystemTestCase
       'github_api_token' => 'test-api-token'
     )
 
-    RedmineDevIntegration::ProviderClients::GitHubClient.any_instance.stubs(:list_webhooks).returns([])
-    RedmineDevIntegration::ProviderClients::GitHubClient.any_instance.stubs(:create_webhook).returns({ 'id' => 999, 'active' => true })
+    RedmineDevIntegration::ProviderClients::GithubClient.any_instance.stubs(:list_webhooks).returns([])
+    RedmineDevIntegration::ProviderClients::GithubClient.any_instance.stubs(:create_webhook).returns({ 'id' => 999, 'active' => true })
 
     log_user('admin', 'admin')
     visit settings_project_path(@project, tab: 'dev_integration_repos')

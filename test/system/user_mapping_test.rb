@@ -167,7 +167,7 @@ class UserMappingTest < ApplicationSystemTestCase
     visit settings_url
 
     within '#add-mapping-form' do
-      select 'GitHub', from: 'mapping_provider'
+      select 'Github', from: 'mapping_provider'
       fill_in 'mapping_provider_user_id', with: '12345'
       fill_in 'mapping_provider_login', with: 'octocat'
       select user.name, from: 'mapping_user_id'

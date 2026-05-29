@@ -3,7 +3,7 @@
 require 'json'
 
 module RedmineDevIntegration
-  class GitHubPullRequestReviewProcessor
+  class GithubPullRequestReviewProcessor
     def initialize; end
 
     def call(external_provider_event)

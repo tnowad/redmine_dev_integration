@@ -4,7 +4,7 @@ require 'json'
 require_relative 'provider_user_resolver'
 
 module RedmineDevIntegration
-  class GitHubDeploymentStatusProcessor
+  class GithubDeploymentStatusProcessor
     TERMINAL_STATUSES = %w[success failed canceled].freeze
 
     def initialize; end

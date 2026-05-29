@@ -2,11 +2,11 @@
 
 require_relative '../test_helper'
 
-class GitHubDeploymentStatusProcessorTest < ActiveSupport::TestCase
+class GithubDeploymentStatusProcessorTest < ActiveSupport::TestCase
   fixtures :projects, :repositories
 
   def setup
-    @processor = RedmineDevIntegration::GitHubDeploymentStatusProcessor.new
+    @processor = RedmineDevIntegration::GithubDeploymentStatusProcessor.new
     @external_repository = ExternalRepository.create!(
       provider: 'github',
       provider_repository_id: '123',

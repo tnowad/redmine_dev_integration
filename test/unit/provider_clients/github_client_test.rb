@@ -14,7 +14,7 @@ class GithubClientTest < ActiveSupport::TestCase
 
   def test_credentials_are_required
     Setting.plugin_redmine_dev_integration = {}
-    client = RedmineDevIntegration::ProviderClients::GitHubClient.new(settings: {})
+    client = RedmineDevIntegration::ProviderClients::GithubClient.new(settings: {})
 
     assert_predicate client, :credentials_missing?
   end
@@ -32,7 +32,7 @@ class GithubClientTest < ActiveSupport::TestCase
     setup_oauth_github_token
     Setting.plugin_redmine_dev_integration = (Setting.plugin_redmine_dev_integration || {}).merge('github_api_token' => 'pat-token')
 
-    client = RedmineDevIntegration::ProviderClients::GitHubClient.new
+    client = RedmineDevIntegration::ProviderClients::GithubClient.new
 
     assert_equal 'oauth-github-token', client.send(:api_token)
     assert_not client.credentials_missing?
@@ -41,7 +41,7 @@ class GithubClientTest < ActiveSupport::TestCase
   def test_falls_back_to_pat_when_oauth_not_available
     Setting.plugin_redmine_dev_integration = { 'github_api_token' => 'pat-token', 'github_provider_enabled' => '1' }
 
-    client = RedmineDevIntegration::ProviderClients::GitHubClient.new
+    client = RedmineDevIntegration::ProviderClients::GithubClient.new
 
     assert_equal 'pat-token', client.send(:api_token)
     assert_not client.credentials_missing?
@@ -50,7 +50,7 @@ class GithubClientTest < ActiveSupport::TestCase
   def test_credentials_missing_with_oauth_returns_false
     setup_oauth_github_token
 
-    client = RedmineDevIntegration::ProviderClients::GitHubClient.new
+    client = RedmineDevIntegration::ProviderClients::GithubClient.new
 
     assert_not client.credentials_missing?
   end
@@ -58,7 +58,7 @@ class GithubClientTest < ActiveSupport::TestCase
   def test_recent_pull_requests_normalize_api_payload
     Setting.plugin_redmine_dev_integration = {'github_api_token' => 'token'}
     requests = []
-    client = RedmineDevIntegration::ProviderClients::GitHubClient.new(
+    client = RedmineDevIntegration::ProviderClients::GithubClient.new(
       settings: {'github_api_token' => 'token'},
       http_getter: lambda do |uri, headers|
         requests << [uri.request_uri, headers]

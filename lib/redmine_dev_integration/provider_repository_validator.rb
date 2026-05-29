@@ -107,7 +107,7 @@ module RedmineDevIntegration
       if normalized_attributes[:provider] == 'github' && provider_repository_id !~ /\A\d+\z/
         errors.add(
           :provider_repository_id,
-          t('redmine_dev_integration.provider_repository_validator.errors.invalid_github_provider_repository_id', default: 'GitHub provider repository ID must be numeric')
+          t('redmine_dev_integration.provider_repository_validator.errors.invalid_github_provider_repository_id', default: 'Github provider repository ID must be numeric')
         )
         return
       end

@@ -200,9 +200,9 @@ module RedmineDevIntegration
 
       case provider.to_s
       when 'github'
-        ProviderClients::GitHubClient.new
+        ProviderClients::GithubClient.new
       when 'gitlab'
-        ProviderClients::GitLabClient.new
+        ProviderClients::GitlabClient.new
       when 'bitbucket'
         ProviderClients::BitbucketClient.new
       end

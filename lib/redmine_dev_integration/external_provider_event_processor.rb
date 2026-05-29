@@ -48,23 +48,23 @@ module RedmineDevIntegration
     private
 
     def github_push_branch_processor
-      @github_push_branch_processor ||= GitHubPushBranchProcessor.new
+      @github_push_branch_processor ||= GithubPushBranchProcessor.new
     end
 
     def github_pull_request_processor
-      @github_pull_request_processor ||= GitHubPullRequestProcessor.new
+      @github_pull_request_processor ||= GithubPullRequestProcessor.new
     end
 
     def github_pull_request_review_processor
-      @github_pull_request_review_processor ||= GitHubPullRequestReviewProcessor.new
+      @github_pull_request_review_processor ||= GithubPullRequestReviewProcessor.new
     end
 
     def github_workflow_run_processor
-      @github_workflow_run_processor ||= GitHubWorkflowRunProcessor.new
+      @github_workflow_run_processor ||= GithubWorkflowRunProcessor.new
     end
 
     def github_deployment_status_processor
-      @github_deployment_status_processor ||= GitHubDeploymentStatusProcessor.new
+      @github_deployment_status_processor ||= GithubDeploymentStatusProcessor.new
     end
 
     def gitlab_push_branch_processor
@@ -100,7 +100,7 @@ module RedmineDevIntegration
     end
 
     def github_release_processor
-      @github_release_processor ||= GitHubReleaseProcessor.new
+      @github_release_processor ||= GithubReleaseProcessor.new
     end
 
     def gitlab_release_processor

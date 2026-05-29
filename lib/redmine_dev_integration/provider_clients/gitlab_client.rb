@@ -2,7 +2,7 @@
 
 module RedmineDevIntegration
   module ProviderClients
-    class GitLabClient < BaseClient
+    class GitlabClient < BaseClient
       def credentials_missing?
         api_token.blank? && oauth_access_token.blank?
       end

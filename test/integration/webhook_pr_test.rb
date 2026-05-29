@@ -8,7 +8,7 @@ class WebhookPrTest < Redmine::IntegrationTest
   include ActiveJob::TestHelper
 
   def setup
-    RedmineDevIntegration::GitHubWebhookSignatureVerifier.any_instance.stubs(:valid?).returns(true)
+    RedmineDevIntegration::GithubWebhookSignatureVerifier.any_instance.stubs(:valid?).returns(true)
     Setting.stubs(:plugin_redmine_dev_integration).returns({
       'github_webhook_secret' => 'test_secret',
       'github_provider_enabled' => '1'
@@ -26,8 +26,8 @@ class WebhookPrTest < Redmine::IntegrationTest
 
   def pr_headers(delivery_id: 'pr-test-001')
     {
-      'X-GitHub-Event' => 'pull_request',
-      'X-GitHub-Delivery' => delivery_id,
+      'X-Github-Event' => 'pull_request',
+      'X-Github-Delivery' => delivery_id,
       'Content-Type' => 'application/json'
     }
   end

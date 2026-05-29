@@ -71,7 +71,7 @@ class ReconciliationTest < ActiveSupport::TestCase
   end
 
   def test_skips_with_credentials_missing
-    mock_client = mock('GitHubClient')
+    mock_client = mock('GithubClient')
     mock_client.stubs(:credentials_missing?).returns(true)
 
     result = RedmineDevIntegration::ReconciliationService.new(
@@ -114,7 +114,7 @@ class ReconciliationTest < ActiveSupport::TestCase
   private
 
   def build_mock_client(pull_requests: [], builds: [], deployments: [])
-    mock_client = mock('GitHubClient')
+    mock_client = mock('GithubClient')
     mock_client.stubs(:credentials_missing?).returns(false)
     mock_client.stubs(:recent_pull_requests).with(repository: @repo).returns(pull_requests)
     mock_client.stubs(:recent_builds).with(repository: @repo).returns(builds)

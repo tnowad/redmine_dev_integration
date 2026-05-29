@@ -2,15 +2,15 @@
 
 require_relative '../test_helper'
 
-class GitHubWebhookSignatureVerifierTest < ActiveSupport::TestCase
+class GithubWebhookSignatureVerifierTest < ActiveSupport::TestCase
   def setup
     @secret = 'topsecret'
     @payload = '{"action":"opened"}'
-    @verifier = RedmineDevIntegration::GitHubWebhookSignatureVerifier.new(secret: @secret)
+    @verifier = RedmineDevIntegration::GithubWebhookSignatureVerifier.new(secret: @secret)
   end
 
   def test_rejects_missing_secret
-    verifier = RedmineDevIntegration::GitHubWebhookSignatureVerifier.new(secret: nil)
+    verifier = RedmineDevIntegration::GithubWebhookSignatureVerifier.new(secret: nil)
 
     assert_not verifier.valid?(payload: @payload, signature: valid_signature)
   end
@@ -34,7 +34,7 @@ class GitHubWebhookSignatureVerifierTest < ActiveSupport::TestCase
   end
 
   def test_class_helper_validates_signature
-    assert RedmineDevIntegration::GitHubWebhookSignatureVerifier.valid?(
+    assert RedmineDevIntegration::GithubWebhookSignatureVerifier.valid?(
       payload: @payload,
       signature: valid_signature,
       secret: @secret

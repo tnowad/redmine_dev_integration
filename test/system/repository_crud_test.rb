@@ -96,7 +96,7 @@ class RepositoryCrudTest < ApplicationSystemTestCase
     visit new_repo_url
 
     within "form[action*='redmine_dev_integration']" do
-      select 'GitHub', from: 'external_repository_provider'
+      select 'Github', from: 'external_repository_provider'
       fill_in 'external_repository_repository_url_or_path', with: 'https://github.com/owner/new-repo'
       fill_in 'external_repository_provider_repository_id', with: '88888'
       click_button 'Create'

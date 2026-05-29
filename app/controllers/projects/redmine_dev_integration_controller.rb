@@ -27,9 +27,9 @@ module Projects
 
       client = case provider
                when 'github'
-                 RedmineDevIntegration::ProviderClients::GitHubClient.new
+                 RedmineDevIntegration::ProviderClients::GithubClient.new
                when 'gitlab'
-                 RedmineDevIntegration::ProviderClients::GitLabClient.new
+                 RedmineDevIntegration::ProviderClients::GitlabClient.new
                when 'bitbucket'
                  RedmineDevIntegration::ProviderClients::BitbucketClient.new
                end

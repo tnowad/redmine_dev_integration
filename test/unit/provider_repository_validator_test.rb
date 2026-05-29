@@ -130,14 +130,14 @@ class ProviderRepositoryValidatorTest < ActiveSupport::TestCase
     result = validate_with_settings({'github_provider_enabled' => '1'}, provider_repository_id: 'redmine/redmine_dev_integration')
 
     assert_not_predicate result, :valid?
-    assert_includes result.errors[:provider_repository_id], 'GitHub provider repository ID must be numeric'
+    assert_includes result.errors[:provider_repository_id], 'Github provider repository ID must be numeric'
   end
 
   def test_rejects_non_numeric_provider_repository_id_for_github
     result = validate_with_settings({'github_provider_enabled' => '1'}, provider_repository_id: 'redmine-dev-integration')
 
     assert_not_predicate result, :valid?
-    assert_includes result.errors[:provider_repository_id], 'GitHub provider repository ID must be numeric'
+    assert_includes result.errors[:provider_repository_id], 'Github provider repository ID must be numeric'
   end
 
   def test_rejects_invalid_url

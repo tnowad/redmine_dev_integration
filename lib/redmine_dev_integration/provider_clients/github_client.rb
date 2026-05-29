@@ -2,7 +2,7 @@
 
 module RedmineDevIntegration
   module ProviderClients
-    class GitHubClient < BaseClient
+    class GithubClient < BaseClient
       def credentials_missing?
         api_token.blank? && oauth_access_token.blank?
       end
@@ -30,9 +30,9 @@ module RedmineDevIntegration
         payload = fetch_json(api_uri("/repos/#{repository_path}"), headers: auth_headers)
         normalize_repository_data(payload)
       rescue Net::HTTPNotFound
-        raise RepositoryNotFoundError, "Repository '#{repository_path}' not found on GitHub"
+        raise RepositoryNotFoundError, "Repository '#{repository_path}' not found on Github"
       rescue Net::HTTPUnauthorized, Net::HTTPForbidden
-        raise AuthenticationError, "GitHub API authentication failed"
+        raise AuthenticationError, "Github API authentication failed"
       end
 
       def list_repositories

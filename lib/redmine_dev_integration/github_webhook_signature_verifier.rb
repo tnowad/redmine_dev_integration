@@ -3,7 +3,7 @@
 require 'openssl'
 
 module RedmineDevIntegration
-  class GitHubWebhookSignatureVerifier
+  class GithubWebhookSignatureVerifier
     SIGNATURE_PREFIX = 'sha256='
 
     def self.valid?(payload:, signature:, secret:)

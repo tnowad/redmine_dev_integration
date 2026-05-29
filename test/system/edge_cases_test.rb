@@ -46,8 +46,8 @@ class EdgeCasesTest < Redmine::IntegrationTest
            headers: {
              'CONTENT_TYPE' => 'application/json',
              'X-Hub-Signature-256' => valid_sig,
-             'X-GitHub-Delivery' => 'delivery-sig-check',
-             'X-GitHub-Event' => 'push'
+             'X-Github-Delivery' => 'delivery-sig-check',
+             'X-Github-Event' => 'push'
            }
     end
     assert_response :accepted
@@ -58,8 +58,8 @@ class EdgeCasesTest < Redmine::IntegrationTest
            headers: {
              'CONTENT_TYPE' => 'application/json',
              'X-Hub-Signature-256' => 'sha256=' + '0' * 64,
-             'X-GitHub-Delivery' => 'delivery-bad-sig',
-             'X-GitHub-Event' => 'push'
+             'X-Github-Delivery' => 'delivery-bad-sig',
+             'X-Github-Event' => 'push'
            }
     end
     assert_response :unauthorized
@@ -71,7 +71,7 @@ class EdgeCasesTest < Redmine::IntegrationTest
       'github_provider_enabled' => '0'
     })
 
-    RedmineDevIntegration::GitHubWebhookSignatureVerifier.any_instance.stubs(:valid?).returns(true)
+    RedmineDevIntegration::GithubWebhookSignatureVerifier.any_instance.stubs(:valid?).returns(true)
 
     assert_no_difference 'ExternalProviderEvent.count' do
       post '/dev_integrations/github/webhook',
@@ -79,8 +79,8 @@ class EdgeCasesTest < Redmine::IntegrationTest
            headers: {
              'CONTENT_TYPE' => 'application/json',
              'X-Hub-Signature-256' => 'sha256=' + '0' * 64,
-             'X-GitHub-Delivery' => 'delivery-disabled',
-             'X-GitHub-Event' => 'push'
+             'X-Github-Delivery' => 'delivery-disabled',
+             'X-Github-Event' => 'push'
            }
     end
 
@@ -95,8 +95,8 @@ class EdgeCasesTest < Redmine::IntegrationTest
     headers = {
       'CONTENT_TYPE' => 'application/json',
       'X-Hub-Signature-256' => signature,
-      'X-GitHub-Delivery' => 'idempotent-delivery-id',
-      'X-GitHub-Event' => 'push'
+      'X-Github-Delivery' => 'idempotent-delivery-id',
+      'X-Github-Event' => 'push'
     }
 
     assert_difference 'ExternalProviderEvent.count', 1 do
@@ -133,8 +133,8 @@ class EdgeCasesTest < Redmine::IntegrationTest
     headers = {
       'CONTENT_TYPE' => 'application/json',
       'X-Hub-Signature-256' => signature,
-      'X-GitHub-Delivery' => 'race-condition-delivery',
-      'X-GitHub-Event' => 'push'
+      'X-Github-Delivery' => 'race-condition-delivery',
+      'X-Github-Event' => 'push'
     }
 
     ExternalProviderEvent.create!(
@@ -159,8 +159,8 @@ class EdgeCasesTest < Redmine::IntegrationTest
     headers = {
       'CONTENT_TYPE' => 'application/json',
       'X-Hub-Signature-256' => signature,
-      'X-GitHub-Delivery' => 'delivery-not-unique',
-      'X-GitHub-Event' => 'push'
+      'X-Github-Delivery' => 'delivery-not-unique',
+      'X-Github-Event' => 'push'
     }
 
     assert_difference 'ExternalProviderEvent.count', 1 do

@@ -2,7 +2,7 @@
 
 require_relative '../../test_helper'
 
-class DevIntegrations::GitHubWebhooksControllerTest < Redmine::IntegrationTest
+class DevIntegrations::GithubWebhooksControllerTest < Redmine::IntegrationTest
   include ActiveJob::TestHelper
 
   def setup
@@ -141,8 +141,8 @@ class DevIntegrations::GitHubWebhooksControllerTest < Redmine::IntegrationTest
       'RAW_POST_DATA' => @payload,
       'CONTENT_TYPE' => 'application/json',
       'X-Hub-Signature-256' => signature,
-      'X-GitHub-Delivery' => @delivery_id,
-      'X-GitHub-Event' => @event_type
+      'X-Github-Delivery' => @delivery_id,
+      'X-Github-Event' => @event_type
     }
   end
 

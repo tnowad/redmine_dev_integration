@@ -33,7 +33,7 @@ module DevIntegrations
     private
 
     def verify_github_signature!
-      verifier = RedmineDevIntegration::GitHubWebhookSignatureVerifier.new(secret: github_webhook_secret)
+      verifier = RedmineDevIntegration::GithubWebhookSignatureVerifier.new(secret: github_webhook_secret)
 
       return if verifier.valid?(payload: request.raw_post, signature: request.headers['X-Hub-Signature-256'])
 
@@ -62,8 +62,8 @@ module DevIntegrations
     def find_or_initialize_event
       ExternalProviderEvent.find_or_initialize_by(
         provider: 'github',
-        delivery_id: request.headers['X-GitHub-Delivery'].to_s,
-        event_type: request.headers['X-GitHub-Event'].to_s
+        delivery_id: request.headers['X-Github-Delivery'].to_s,
+        event_type: request.headers['X-Github-Event'].to_s
       )
     end
 

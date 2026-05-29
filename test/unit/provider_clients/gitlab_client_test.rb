@@ -21,7 +21,7 @@ class GitlabClientTest < ActiveSupport::TestCase
   end
 
   def test_credentials_are_required
-    client = RedmineDevIntegration::ProviderClients::GitLabClient.new(settings: {})
+    client = RedmineDevIntegration::ProviderClients::GitlabClient.new(settings: {})
 
     assert_predicate client, :credentials_missing?
   end
@@ -30,7 +30,7 @@ class GitlabClientTest < ActiveSupport::TestCase
     setup_oauth_gitlab_token
     Setting.plugin_redmine_dev_integration = (Setting.plugin_redmine_dev_integration || {}).merge('gitlab_api_token' => 'pat-token')
 
-    client = RedmineDevIntegration::ProviderClients::GitLabClient.new
+    client = RedmineDevIntegration::ProviderClients::GitlabClient.new
 
     assert_equal 'oauth-gitlab-token', client.send(:api_token)
     assert_not client.credentials_missing?
@@ -40,7 +40,7 @@ class GitlabClientTest < ActiveSupport::TestCase
     setup_oauth_gitlab_token
     Setting.plugin_redmine_dev_integration = (Setting.plugin_redmine_dev_integration || {}).merge('gitlab_api_token' => 'pat-token')
 
-    client = RedmineDevIntegration::ProviderClients::GitLabClient.new
+    client = RedmineDevIntegration::ProviderClients::GitlabClient.new
 
     headers = client.send(:auth_headers)
     assert_equal 'Bearer oauth-gitlab-token', headers['Authorization']
@@ -50,7 +50,7 @@ class GitlabClientTest < ActiveSupport::TestCase
   def test_pat_auth_headers_use_private_token
     Setting.plugin_redmine_dev_integration = { 'gitlab_api_token' => 'pat-token', 'gitlab_provider_enabled' => '1' }
 
-    client = RedmineDevIntegration::ProviderClients::GitLabClient.new
+    client = RedmineDevIntegration::ProviderClients::GitlabClient.new
 
     headers = client.send(:auth_headers)
     assert_equal 'pat-token', headers['PRIVATE-TOKEN']
@@ -60,7 +60,7 @@ class GitlabClientTest < ActiveSupport::TestCase
   def test_credentials_missing_with_oauth_returns_false
     setup_oauth_gitlab_token
 
-    client = RedmineDevIntegration::ProviderClients::GitLabClient.new
+    client = RedmineDevIntegration::ProviderClients::GitlabClient.new
 
     assert_not client.credentials_missing?
   end
@@ -68,7 +68,7 @@ class GitlabClientTest < ActiveSupport::TestCase
   def test_recent_builds_normalize_api_payload
     Setting.plugin_redmine_dev_integration = {'gitlab_token' => 'token'}
     requests = []
-    client = RedmineDevIntegration::ProviderClients::GitLabClient.new(
+    client = RedmineDevIntegration::ProviderClients::GitlabClient.new(
       settings: {'gitlab_token' => 'token'},
       http_getter: lambda do |uri, headers|
         requests << [uri.request_uri, headers]

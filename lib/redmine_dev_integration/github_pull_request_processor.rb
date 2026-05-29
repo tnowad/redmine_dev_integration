@@ -4,7 +4,7 @@ require 'json'
 require_relative 'provider_user_resolver'
 
 module RedmineDevIntegration
-  class GitHubPullRequestProcessor
+  class GithubPullRequestProcessor
     def initialize; end
 
     def call(external_provider_event)

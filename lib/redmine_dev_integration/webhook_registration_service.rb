@@ -27,10 +27,10 @@ module RedmineDevIntegration
 
     def register_github_webhook(repository, redmine_webhook_url)
       secret = github_webhook_secret
-      return Result.new(status: :error, message: 'GitHub webhook secret is not configured') if secret.blank?
+      return Result.new(status: :error, message: 'Github webhook secret is not configured') if secret.blank?
 
-      client = ProviderClients::GitHubClient.new
-      return Result.new(status: :error, message: 'GitHub API token is missing') if client.credentials_missing?
+      client = ProviderClients::GithubClient.new
+      return Result.new(status: :error, message: 'Github API token is missing') if client.credentials_missing?
 
       begin
         existing = find_existing_webhook(client, repository, redmine_webhook_url)
@@ -75,7 +75,7 @@ module RedmineDevIntegration
       token = gitlab_webhook_token
       return Result.new(status: :error, message: 'GitLab webhook secret token is not configured') if token.blank?
 
-      client = ProviderClients::GitLabClient.new
+      client = ProviderClients::GitlabClient.new
       return Result.new(status: :error, message: 'GitLab API token is missing') if client.credentials_missing?
 
       begin

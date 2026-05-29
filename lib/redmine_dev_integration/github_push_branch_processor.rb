@@ -3,7 +3,7 @@
 require 'json'
 
 module RedmineDevIntegration
-  class GitHubPushBranchProcessor
+  class GithubPushBranchProcessor
     def initialize; end
 
     def call(external_provider_event)

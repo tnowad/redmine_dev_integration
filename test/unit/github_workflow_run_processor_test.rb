@@ -2,11 +2,11 @@
 
 require_relative '../test_helper'
 
-class GitHubWorkflowRunProcessorTest < ActiveSupport::TestCase
+class GithubWorkflowRunProcessorTest < ActiveSupport::TestCase
   fixtures :projects, :repositories
 
   def setup
-    @processor = RedmineDevIntegration::GitHubWorkflowRunProcessor.new
+    @processor = RedmineDevIntegration::GithubWorkflowRunProcessor.new
     @external_repository = ExternalRepository.create!(
       provider: 'github',
       provider_repository_id: '123',

@@ -15,12 +15,12 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
   end
 
   def test_github_registration_uses_oauth_token_when_available
-    client = mock('GitHubClient')
+    client = mock('GithubClient')
     client.stubs(:credentials_missing?).returns(false)
     client.expects(:list_webhooks).with(repository: @github_repository).returns([])
     client.expects(:create_webhook).returns('id' => 12345)
 
-    RedmineDevIntegration::ProviderClients::GitHubClient.stubs(:new).returns(client)
+    RedmineDevIntegration::ProviderClients::GithubClient.stubs(:new).returns(client)
 
     result = @service.register(repository: @github_repository, redmine_webhook_url: @webhook_url)
 
@@ -29,12 +29,12 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
   end
 
   def test_gitlab_registration_uses_oauth_token_when_available
-    client = mock('GitLabClient')
+    client = mock('GitlabClient')
     client.stubs(:credentials_missing?).returns(false)
     client.expects(:list_webhooks).with(repository: @gitlab_repository).returns([])
     client.expects(:create_webhook).returns('id' => 678)
 
-    RedmineDevIntegration::ProviderClients::GitLabClient.stubs(:new).returns(client)
+    RedmineDevIntegration::ProviderClients::GitlabClient.stubs(:new).returns(client)
 
     result = @service.register(repository: @gitlab_repository, redmine_webhook_url: @webhook_url)
 
@@ -51,7 +51,7 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
       secret: 'test-secret'
     ).returns('id' => 12345, 'url' => @webhook_url)
 
-    RedmineDevIntegration::ProviderClients::GitHubClient.stubs(:new).returns(client)
+    RedmineDevIntegration::ProviderClients::GithubClient.stubs(:new).returns(client)
 
     result = @service.register(repository: @github_repository, redmine_webhook_url: @webhook_url)
 
@@ -74,7 +74,7 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
       secret: 'test-secret'
     ).returns('id' => 12345)
 
-    RedmineDevIntegration::ProviderClients::GitHubClient.stubs(:new).returns(client)
+    RedmineDevIntegration::ProviderClients::GithubClient.stubs(:new).returns(client)
 
     result = @service.register(repository: @github_repository, redmine_webhook_url: @webhook_url)
 
@@ -90,7 +90,7 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
     result = @service.register(repository: @github_repository, redmine_webhook_url: @webhook_url)
 
     assert_predicate result, :error?
-    assert_equal 'GitHub webhook secret is not configured', result.message
+    assert_equal 'Github webhook secret is not configured', result.message
   end
 
   def test_github_registration_fails_when_api_fails
@@ -98,7 +98,7 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
     client.expects(:list_webhooks).with(repository: @github_repository).returns([])
     client.expects(:create_webhook).raises(StandardError.new('API failure'))
 
-    RedmineDevIntegration::ProviderClients::GitHubClient.stubs(:new).returns(client)
+    RedmineDevIntegration::ProviderClients::GithubClient.stubs(:new).returns(client)
 
     result = @service.register(repository: @github_repository, redmine_webhook_url: @webhook_url)
 
@@ -116,7 +116,7 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
       token: 'test-token'
     ).returns('id' => 678)
 
-    RedmineDevIntegration::ProviderClients::GitLabClient.stubs(:new).returns(client)
+    RedmineDevIntegration::ProviderClients::GitlabClient.stubs(:new).returns(client)
 
     result = @service.register(repository: @gitlab_repository, redmine_webhook_url: @webhook_url)
 
@@ -182,13 +182,13 @@ class WebhookRegistrationServiceTest < ActiveSupport::TestCase
   end
 
   def mock_github_client
-    mock = mock('GitHubClient')
+    mock = mock('GithubClient')
     mock.stubs(:credentials_missing?).returns(false)
     mock
   end
 
   def mock_gitlab_client
-    mock = mock('GitLabClient')
+    mock = mock('GitlabClient')
     mock.stubs(:credentials_missing?).returns(false)
     mock
   end
